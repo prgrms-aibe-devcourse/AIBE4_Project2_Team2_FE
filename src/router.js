@@ -8,6 +8,7 @@ import { renderSignup } from "./pages/signup.js";
 import { renderApply } from "./pages/apply.js";
 import { renderRecommend } from "./pages/recommend.js";
 import { renderProfileDetail } from "./pages/profileDetail.js";
+import { renderManager } from "./pages/manager.js";
 
 const PUBLIC_PATHS = new Set(["/login", "/signup"]);
 
@@ -18,6 +19,7 @@ const routes = {
   "/recommend": renderRecommend,
   "/login": renderLogin,
   "/signup": renderSignup,
+  "/manager": renderManager,
 };
 
 export function navigate(path) {
@@ -111,19 +113,22 @@ function getCssFilesForPath(path) {
   if (path === "/apply") return ["src/css/apply.css"];
   if (path === "/recommend") return ["src/css/recommend.css"];
   if (path.startsWith("/profile/")) return ["src/css/profileDetail.css"];
+  if (path === "/manager") return ["src/css/manager.css"];
   return [];
 }
 
 function bindHeaderActions() {
   const mypageBtn = document.getElementById("btnMyPage");
+  const managerBtn = document.getElementById("btnManager");
   const logoutBtn = document.getElementById("btnLogout");
-  const avatarBtn = document.getElementById("avatarBtn");
 
   const menu = document.getElementById("userMenu");
   const menuMyPage = document.getElementById("menuMyPage");
+  const menuManager = document.getElementById("menuManager");
   const menuLogout = document.getElementById("menuLogout");
 
   if (mypageBtn) mypageBtn.addEventListener("click", () => navigate("/mypage"));
+  if (managerBtn) managerBtn.addEventListener("click", () => navigate("/manager"));
   if (logoutBtn)
     logoutBtn.addEventListener("click", () => {
       logout();
@@ -132,6 +137,7 @@ function bindHeaderActions() {
     });
 
   if (menuMyPage) menuMyPage.addEventListener("click", () => (closeUserMenu(), navigate("/mypage")));
+  if (menuManager) menuManager.addEventListener("click", () => (closeUserMenu(), navigate("/manager")));
   if (menuLogout)
     menuLogout.addEventListener("click", () => {
       logout();
@@ -194,7 +200,7 @@ function syncHeaderUser() {
   const menuNick = document.getElementById("menuNickname");
 
   const links = document.getElementById("userLinks");
-
+  
   const isAuth = isLoggedIn();
 
   if (links) links.style.visibility = isAuth ? "visible" : "hidden";
@@ -203,6 +209,14 @@ function syncHeaderUser() {
   if (nickEl) nickEl.textContent = nick;
   if (deskNick) deskNick.textContent = nick;
   if (menuNick) menuNick.textContent = nick;
+
+  // 매니저 버튼 visibility 처리
+  const isManager = session?.major === '관리자';
+  const managerBtn = document.getElementById('btnManager');
+  const menuManager = document.getElementById('menuManager');
+
+  if(managerBtn) managerBtn.style.display = isManager ? '' : 'none';
+  if(menuManager) menuManager.style.display = isManager ? '' : 'none';
 }
 
 function closeUserMenu() {

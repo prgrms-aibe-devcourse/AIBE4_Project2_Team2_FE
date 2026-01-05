@@ -60,9 +60,17 @@ function readUsers() {
   try {
     const raw = localStorage.getItem(USERS_KEY);
     if (!raw) return seedUsers();
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return seedUsers();
-    return parsed;
+    
+    let users = JSON.parse(raw);
+    if (!Array.isArray(users)) return seedUsers();
+
+    const managerExists = users.some(u => u.userId === 'manager');
+    if (!managerExists) {
+      users.push({ userId: "manager", password: "adminpass", nickname: "매니저", major: "관리자" });
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+    
+    return users;
   } catch {
     return seedUsers();
   }
@@ -71,6 +79,7 @@ function readUsers() {
 function seedUsers() {
   const seeded = [
     { userId: "student123", password: "password123", nickname: "공감학생", major: "고려대생" },
+    { userId: "manager", password: "adminpass", nickname: "매니저", major: "관리자" },
   ];
   localStorage.setItem(USERS_KEY, JSON.stringify(seeded));
   return seeded;

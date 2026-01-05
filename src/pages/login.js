@@ -34,6 +34,7 @@ export function renderLogin(root) {
         <button class="auth-ghost" type="button" id="toSignup">회원가입</button>
 
         <p class="auth-hint">테스트 계정: student123 / password123</p>
+        <p class="auth-hint">매니저 계정: manager / adminpass</p>
       </form>
     </div>
   `;

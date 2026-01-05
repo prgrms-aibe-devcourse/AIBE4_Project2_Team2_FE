@@ -1,0 +1,98 @@
+.manager-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.manager-title {
+  margin: 10px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dark-text);
+}
+
+.manager-card {
+  width: min(1000px, 100%);
+  padding: 24px 22px;
+}
+
+.manager-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.manager-table th,
+.manager-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.manager-table th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background-color: var(--bg-gray);
+}
+
+.manager-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.manager-table td .user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.manager-table td .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--pastel-green-soft) 0%, var(--pastel-yellow) 100%);
+  border: 1px solid rgba(212, 244, 167, 0.40);
+}
+
+.manager-table td .user-name {
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
+.action-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.action-btn.approve {
+  border-color: var(--pastel-green);
+  background: rgba(212, 244, 167, 0.25);
+}
+
+.action-btn.approve:hover {
+  background: var(--pastel-green);
+}
+
+.action-btn.reject {
+  border-color: #f5c5c5;
+  background: #fceeee;
+}
+
+.action-btn.reject:hover {
+  background: #fcd7d7;
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
