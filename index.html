@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MajorMate</title>
+
+    <link rel="stylesheet" href="src/css/common.css" />
+  </head>
+  <body>
+    <header class="site-header" id="siteHeader">
+      <div class="header-inner">
+        <div class="header-left">
+          <a class="brand" href="#/">
+            <span class="brand-mark" aria-hidden="true">MM</span>
+            <span class="brand-title">MajorMate</span>
+          </a>
+        </div>
+
+        <div class="header-right" id="headerRight">
+          <div class="user-links" id="userLinks">
+            <span class="user-nickname" id="deskNickname">사용자</span>
+            <button class="user-link as-button" type="button" id="btnMyPage">마이페이지</button>
+            <button class="user-link as-button" type="button" id="btnLogout">로그아웃</button>
+          </div>
+
+          <button class="avatar-btn avatar-btn--disabled" type="button" id="avatarBtn" aria-label="프로필 메뉴" disabled>
+            <span class="avatar" aria-hidden="true"></span>
+          </button>
+
+          <div class="user-menu" id="userMenu" aria-label="사용자 메뉴">
+            <div class="user-menu-head">
+              <div class="user-menu-nick" id="menuNickname">사용자</div>
+            </div>
+            <button class="user-menu-item" type="button" id="menuMyPage">마이페이지</button>
+            <button class="user-menu-item" type="button" id="menuLogout">로그아웃</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="container" id="view"></div>
+    </main>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

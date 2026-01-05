@@ -1,0 +1,215 @@
+.pd-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.pd-card,
+.pd-bottom {
+  width: min(760px, 100%);
+}
+
+.pd-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pd-head-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.pd-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--pastel-green-soft) 0%, var(--pastel-mint) 100%);
+  border: 1px solid rgba(212, 244, 167, 0.45);
+  flex: 0 0 auto;
+}
+
+.pd-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--dark-text);
+}
+
+.pd-sub {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pd-one {
+  font-size: 12px;
+  color: rgba(45, 45, 58, 0.74);
+  margin-top: 2px;
+}
+
+.pd-head-right {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.pd-apply-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.pd-apply-btn:hover {
+  border-color: rgba(212, 244, 167, 0.55);
+  background: rgba(212, 244, 167, 0.18);
+  transform: translateY(-0.5px);
+}
+
+.pd-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 12px 0 12px;
+}
+
+.pd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pd-section-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--dark-text);
+}
+
+.pd-text {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(45, 45, 58, 0.76);
+  line-height: 1.7;
+}
+
+.pd-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: rgba(45, 45, 58, 0.76);
+  line-height: 1.7;
+}
+
+.pd-bottom {
+  padding: 0;
+}
+
+.pd-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.pd-tab {
+  height: 40px;
+  border: 0;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12px;
+  color: rgba(45, 45, 58, 0.72);
+  transition: all 0.2s ease;
+}
+
+.pd-tab:hover {
+  background: rgba(212, 244, 167, 0.12);
+  color: var(--dark-text);
+}
+
+.pd-tab.active {
+  background: var(--dark-text);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.pd-bottom-body {
+  padding: 18px 16px 14px;
+}
+
+.pd-item {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+
+.pd-item:first-child {
+  padding-top: 0;
+}
+
+.pd-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.pd-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pd-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dark-text);
+}
+
+.pd-item-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.pd-date {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pd-stars {
+  margin-top: 5px;
+  font-size: 13px;
+  line-height: 1;
+  color: #fbbf24;
+}
+
+.pd-item-content {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(45, 45, 58, 0.76);
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .pd-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pd-head-right {
+    justify-content: flex-start;
+  }
+}

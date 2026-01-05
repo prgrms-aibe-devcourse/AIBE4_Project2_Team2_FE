@@ -1,0 +1,67 @@
+.search-row {
+  width: 100%;
+  margin: 12px 0 12px;
+}
+
+.search-input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 16px;
+  outline: none;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+  border-color: rgba(212, 244, 167, 0.70);
+  box-shadow: var(--focus);
+}
+
+.primary-wide {
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--pastel-green) 0%, var(--pastel-green-strong) 100%);
+  color: var(--dark-text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.primary-wide:hover {
+  transform: translateY(-0.5px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10);
+  filter: saturate(1.02);
+}
+
+.cards-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.card {
+  min-height: 210px;
+}
+
+@media (max-width: 980px) {
+  .cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .cards-grid { grid-template-columns: 1fr; }
+
+  .search-input,
+  .primary-wide {
+    height: 48px;
+  }
+}
