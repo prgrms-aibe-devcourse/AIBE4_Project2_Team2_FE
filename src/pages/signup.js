@@ -1,4 +1,5 @@
 import { navigate } from "../router.js";
+import { api, ApiError } from "../services/api.js";
 
 export function renderSignup(root) {
   const wrap = document.createElement("div");
@@ -109,37 +110,30 @@ export function renderSignup(root) {
     }
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/auth/signup`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            password,
-            name,
-            nickname,
-            email,
-            role,
-            status,
-          }),
-        }
-      );
+      const result = await api.post("/auth/signup", {
+        username,
+        password,
+        name,
+        nickname,
+        email,
+        memberType: role,
+        status,
+      });
 
-      const result = await res.json();
-
-      if (!res.ok) {
+      if (!result.success) {
         alert(result.message || "회원가입 실패");
         return;
       }
 
       alert("회원가입 완료");
       navigate("/login");
-    } catch (err) {
-      console.error(err);
-      alert("서버 연결 오류");
+    } catch (error) {
+      console.error(error);
+      if (error instanceof ApiError) {
+        alert(error.message);
+      } else {
+        alert("서버 연결 오류");
+      }
     }
   });
 }

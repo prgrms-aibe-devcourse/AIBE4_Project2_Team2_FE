@@ -130,8 +130,8 @@ function bindHeaderActions() {
   if (mypageBtn) mypageBtn.addEventListener("click", () => navigate("/mypage"));
   if (managerBtn) managerBtn.addEventListener("click", () => navigate("/manager"));
   if (logoutBtn)
-    logoutBtn.addEventListener("click", () => {
-      logout();
+    logoutBtn.addEventListener("click", async () => {
+      await logout();
       closeUserMenu();
       navigate("/login");
     });
@@ -139,8 +139,8 @@ function bindHeaderActions() {
   if (menuMyPage) menuMyPage.addEventListener("click", () => (closeUserMenu(), navigate("/mypage")));
   if (menuManager) menuManager.addEventListener("click", () => (closeUserMenu(), navigate("/manager")));
   if (menuLogout)
-    menuLogout.addEventListener("click", () => {
-      logout();
+    menuLogout.addEventListener("click", async () => {
+      await logout();
       closeUserMenu();
       navigate("/login");
     });
@@ -205,7 +205,7 @@ function syncHeaderUser() {
 
   if (links) links.style.visibility = isAuth ? "visible" : "hidden";
 
-  const nick = session?.nickname ? String(session.nickname) : "사용자";
+  const nick = session?.user?.nickname ? String(session.user.nickname) : "사용자";
   if (nickEl) nickEl.textContent = nick;
   if (deskNick) deskNick.textContent = nick;
   if (menuNick) menuNick.textContent = nick;

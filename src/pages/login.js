@@ -21,8 +21,8 @@ export function renderLogin(root) {
 
       <form class="auth-form" id="loginForm">
         <div class="auth-row">
-          <label class="auth-label" for="login-userId">아이디</label>
-          <input class="auth-input" id="login-userId" name="userId" autocomplete="username" required />
+          <label class="auth-label" for="login-username">아이디</label>
+          <input class="auth-input" id="login-username" name="username" type="text" autocomplete="username" required />
         </div>
 
         <div class="auth-row">
@@ -32,9 +32,6 @@ export function renderLogin(root) {
 
         <button class="auth-primary" type="submit">로그인</button>
         <button class="auth-ghost" type="button" id="toSignup">회원가입</button>
-
-        <p class="auth-hint">테스트 계정: student123 / password123</p>
-        <p class="auth-hint">매니저 계정: manager / adminpass</p>
       </form>
     </div>
   `;
@@ -46,12 +43,12 @@ export function renderLogin(root) {
 
   toSignup.addEventListener("click", () => navigate("/signup"));
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
 
-    const res = login({
-      userId: String(fd.get("userId") || "").trim(),
+    const res = await login({
+      username: String(fd.get("username") || "").trim(),
       password: String(fd.get("password") || ""),
     });
 
