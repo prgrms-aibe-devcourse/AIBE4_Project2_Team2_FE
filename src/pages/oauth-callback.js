@@ -16,36 +16,37 @@ export function renderOAuthCallback(root) {
 
   root.appendChild(wrap);
 
-  // URL에서 토큰 정보 파싱
-  const urlParams = new URLSearchParams(window.location.search);
-  const accessToken = urlParams.get("accessToken");
-  const refreshToken = urlParams.get("refreshToken");
-  const tokenType = urlParams.get("tokenType");
-  const expiresIn = urlParams.get("expiresIn");
-  const error = urlParams.get("error");
+  const params = new URLSearchParams(window.location.search);
+  const accessToken = params.get("accessToken");
+  const tokenType = params.get("tokenType");
+  const expiresIn = params.get("expiresIn");
+  const error = params.get("error");
 
   if (error) {
     alert("소셜 로그인 실패: " + error);
-    navigate("/login");
+    window.location.replace("/login");
     return;
   }
 
-  if (!accessToken || !refreshToken) {
-    alert("토큰 정보가 없습니다");
-    navigate("/login");
+  if (!accessToken) {
+    alert("소셜 로그인 토큰을 받지 못했습니다");
+    window.location.replace("/login");
     return;
   }
 
-  // 세션 저장
   const session = {
     accessToken,
-    refreshToken,
     tokenType: tokenType || "Bearer",
-    expiresIn: expiresIn ? parseInt(expiresIn) : null,
+    expiresIn: expiresIn ? Number(expiresIn) : null,
+    tokenUpdatedAt: Date.now(),
   };
 
   localStorage.setItem("mm_session", JSON.stringify(session));
 
-  // 홈으로 리다이렉트
-  navigate("/");
+  /**
+   * ★ 핵심 수정
+   * OAuth 콜백에서는 navigate() 금지
+   * → query/hash 완전히 제거한 뒤 새로 진입
+   */
+  window.location.replace("/");
 }

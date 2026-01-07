@@ -80,28 +80,16 @@ function getAccessToken() {
   }
 }
 
-function getRefreshToken() {
-  try {
-    const session = localStorage.getItem("mm_session");
-    if (!session) return null;
-    const parsed = JSON.parse(session);
-    return parsed.refreshToken || null;
-  } catch {
-    return null;
-  }
-}
+
 
 async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
+      credentials: "include", // ★ 핵심
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ refreshToken }),
     });
 
     const result = await response.json();
@@ -111,8 +99,8 @@ async function refreshAccessToken() {
     }
 
     const session = JSON.parse(localStorage.getItem("mm_session") || "{}");
+
     session.accessToken = result.data.accessToken;
-    session.refreshToken = result.data.refreshToken;
     session.tokenType = result.data.tokenType;
     session.expiresIn = result.data.expiresIn;
     session.tokenUpdatedAt = Date.now();
@@ -123,6 +111,7 @@ async function refreshAccessToken() {
     return false;
   }
 }
+
 
 function logout() {
   localStorage.removeItem("mm_session");

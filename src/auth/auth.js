@@ -26,10 +26,9 @@ export async function login({ username, password }) {
 
     const session = {
       accessToken: result.data.accessToken,
-      refreshToken: result.data.refreshToken,
+
       tokenType: result.data.tokenType,
       expiresIn: result.data.expiresIn,
-      username: username,
     };
 
     localStorage.setItem(KEY, JSON.stringify(session));
