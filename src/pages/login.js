@@ -33,6 +33,12 @@ export function renderLogin(root) {
         <button class="auth-primary" type="submit">로그인</button>
         <button class="auth-ghost" type="button" id="toSignup">회원가입</button>
 
+        <div class="auth-links">
+          <a href="#" id="toFindUsername">아이디 찾기</a>
+          <span class="auth-link-divider">|</span>
+          <a href="#" id="toFindPassword">비밀번호 찾기</a>
+        </div>
+
         <div class="auth-divider">또는</div>
 
         <div class="auth-social-buttons">
@@ -66,11 +72,21 @@ export function renderLogin(root) {
 
   const form = wrap.querySelector("#loginForm");
   const toSignup = wrap.querySelector("#toSignup");
+  const toFindUsername = wrap.querySelector("#toFindUsername");
+  const toFindPassword = wrap.querySelector("#toFindPassword");
   const googleLoginBtn = wrap.querySelector("#googleLogin");
   const githubLoginBtn = wrap.querySelector("#githubLogin");
   const kakaoLoginBtn = wrap.querySelector("#kakaoLogin");
 
   toSignup.addEventListener("click", () => navigate("/signup"));
+  toFindUsername.addEventListener("click", (e) => {
+    e.preventDefault();
+    navigate("/find-username");
+  });
+  toFindPassword.addEventListener("click", (e) => {
+    e.preventDefault();
+    navigate("/find-password");
+  });
 
   // 소셜 로그인 버튼
   googleLoginBtn.addEventListener("click", () => {

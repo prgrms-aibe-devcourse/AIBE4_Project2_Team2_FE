@@ -121,6 +121,30 @@
   color: var(--muted);
 }
 
+.auth-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.auth-links a {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.auth-links a:hover {
+  color: var(--pastel-green-strong);
+}
+
+.auth-link-divider {
+  color: var(--line);
+}
+
 .auth-btn-secondary {
   height: 38px;
   min-width: 100px;

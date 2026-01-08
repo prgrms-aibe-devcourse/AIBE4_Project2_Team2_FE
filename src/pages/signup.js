@@ -280,14 +280,20 @@ export function renderSignup(root) {
     }
 
     try {
-      const result = await api.post("/auth/signup", {
+      const signupData = {
         username,
         password,
         name,
         nickname,
         email,
         status,
-      });
+      };
+
+      console.log("회원가입 요청 데이터:", { ...signupData, password: "***" });
+
+      const result = await api.post("/auth/signup", signupData);
+
+      console.log("회원가입 응답:", result);
 
       if (!result.success) {
         alert(result.message || "회원가입 실패");
@@ -297,12 +303,14 @@ export function renderSignup(root) {
       alert("회원가입 완료");
       navigate("/login");
     } catch (error) {
-      console.error(error);
+      console.error("회원가입 에러:", error);
+      console.error("에러 상세:", error.data);
+
+      let errorMessage = "서버 연결 오류";
       if (error instanceof ApiError) {
-        alert(error.message);
-      } else {
-        alert("서버 연결 오류");
+        errorMessage = error.data?.error?.message || error.data?.message || error.message;
       }
+      alert(errorMessage);
     }
   });
 }

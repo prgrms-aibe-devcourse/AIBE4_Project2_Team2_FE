@@ -5,13 +5,15 @@ import { renderMyPage } from "./pages/mypage.js";
 import { renderLogin } from "./pages/login.js";
 import { renderSignup } from "./pages/signup.js";
 import { renderOAuthCallback } from "./pages/oauth-callback.js";
+import { renderFindUsername } from "./pages/find-username.js";
+import { renderFindPassword } from "./pages/find-password.js";
 
 import { renderApply } from "./pages/apply.js";
 import { renderRecommend } from "./pages/recommend.js";
 import { renderProfileDetail } from "./pages/profileDetail.js";
 import { renderManager } from "./pages/manager.js";
 
-const PUBLIC_PATHS = new Set(["/login", "/signup", "/oauth/callback"]);
+const PUBLIC_PATHS = new Set(["/login", "/signup", "/oauth/callback", "/find-username", "/find-password"]);
 
 const routes = {
   "/": renderHome,
@@ -21,6 +23,8 @@ const routes = {
   "/login": renderLogin,
   "/signup": renderSignup,
   "/oauth/callback": renderOAuthCallback,
+  "/find-username": renderFindUsername,
+  "/find-password": renderFindPassword,
   "/manager": renderManager,
 };
 
@@ -109,7 +113,7 @@ function syncRouteStyles(path) {
 }
 
 function getCssFilesForPath(path) {
-  if (path === "/login" || path === "/signup" || path === "/oauth/callback") return ["src/css/auth.css"];
+  if (path === "/login" || path === "/signup" || path === "/oauth/callback" || path === "/find-username" || path === "/find-password") return ["src/css/auth.css"];
   if (path === "/") return ["src/css/home.css"];
   if (path === "/mypage") return ["src/css/mypage.css"];
   if (path === "/apply") return ["src/css/apply.css"];
