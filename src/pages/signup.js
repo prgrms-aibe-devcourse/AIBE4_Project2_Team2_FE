@@ -31,7 +31,24 @@ export function renderSignup(root) {
 
         <div class="auth-row">
           <label class="auth-label">이메일</label>
-          <input class="auth-input" name="email" type="email" required />
+          <div class="auth-row-inline">
+            <div class="auth-input-wrapper">
+              <input class="auth-input" id="emailInput" name="email" type="email" required />
+            </div>
+            <button type="button" class="auth-btn-secondary" id="sendVerificationBtn">인증 코드 발송</button>
+          </div>
+          <div id="emailStatus" class="auth-verification-status"></div>
+        </div>
+
+        <div class="auth-row" id="verificationCodeRow" style="display: none;">
+          <label class="auth-label">인증 코드</label>
+          <div class="auth-row-inline">
+            <div class="auth-input-wrapper">
+              <input class="auth-input" id="verificationCodeInput" type="text" maxlength="6" placeholder="6자리 코드 입력" />
+            </div>
+            <button type="button" class="auth-btn-secondary" id="verifyCodeBtn">확인</button>
+          </div>
+          <div id="verificationStatus" class="auth-verification-status"></div>
         </div>
 
         <div class="auth-row">
@@ -75,6 +92,12 @@ export function renderSignup(root) {
             </svg>
             GitHub
           </button>
+          <button type="button" class="auth-social-btn kakao" id="kakaoSignup">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 0C3.58 0 0 2.91 0 6.5C0 8.74 1.23 10.71 3.13 11.89L2.38 14.84C2.32 15.06 2.53 15.25 2.73 15.14L6.29 13.03C6.85 13.12 7.42 13.17 8 13.17C12.42 13.17 16 10.26 16 6.67C16 3.08 12.42 0 8 0Z" fill="#3c1e1e"/>
+            </svg>
+            Kakao
+          </button>
         </div>
       </form>
     </div>
@@ -86,8 +109,116 @@ export function renderSignup(root) {
   const toLogin = wrap.querySelector("#toLogin");
   const googleSignupBtn = wrap.querySelector("#googleSignup");
   const githubSignupBtn = wrap.querySelector("#githubSignup");
+  const kakaoSignupBtn = wrap.querySelector("#kakaoSignup");
+
+  // 이메일 인증 관련 요소
+  const emailInput = wrap.querySelector("#emailInput");
+  const sendVerificationBtn = wrap.querySelector("#sendVerificationBtn");
+  const emailStatus = wrap.querySelector("#emailStatus");
+  const verificationCodeRow = wrap.querySelector("#verificationCodeRow");
+  const verificationCodeInput = wrap.querySelector("#verificationCodeInput");
+  const verifyCodeBtn = wrap.querySelector("#verifyCodeBtn");
+  const verificationStatus = wrap.querySelector("#verificationStatus");
+
+  let isEmailVerified = false;
 
   toLogin.addEventListener("click", () => navigate("/login"));
+
+  // 이메일 인증 코드 발송
+  sendVerificationBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    if (!email) {
+      emailStatus.textContent = "이메일을 입력해주세요";
+      emailStatus.className = "auth-verification-status error";
+      return;
+    }
+
+    sendVerificationBtn.disabled = true;
+    emailStatus.textContent = "발송 중...";
+    emailStatus.className = "auth-verification-status";
+
+    try {
+      const result = await api.post("/auth/email/send", {
+        email,
+        type: "SIGNUP"
+      });
+
+      if (result.success) {
+        emailStatus.textContent = "인증 코드가 발송되었습니다";
+        emailStatus.className = "auth-verification-status success";
+        verificationCodeRow.style.display = "flex";
+        sendVerificationBtn.textContent = "재발송";
+      } else {
+        emailStatus.textContent = result.message || "발송 실패";
+        emailStatus.className = "auth-verification-status error";
+      }
+    } catch (error) {
+      console.error("이메일 발송 에러:", error);
+
+      let errorMessage = "서버 오류";
+      if (error instanceof ApiError) {
+        // 백엔드 에러 응답 구조에 맞게 메시지 추출
+        errorMessage = error.data?.error?.message || error.data?.message || error.message;
+      }
+      emailStatus.textContent = errorMessage;
+      emailStatus.className = "auth-verification-status error";
+    } finally {
+      sendVerificationBtn.disabled = false;
+    }
+  });
+
+  // 이메일 인증 코드 확인
+  verifyCodeBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const code = verificationCodeInput.value.trim();
+
+    if (!code) {
+      verificationStatus.textContent = "인증 코드를 입력해주세요";
+      verificationStatus.className = "auth-verification-status error";
+      return;
+    }
+
+    verifyCodeBtn.disabled = true;
+    verificationStatus.textContent = "확인 중...";
+    verificationStatus.className = "auth-verification-status";
+
+    try {
+      const result = await api.post("/auth/email/verify", {
+        email,
+        code,
+        type: "SIGNUP"
+      });
+
+      if (result.success) {
+        verificationStatus.textContent = "✓ 인증 완료";
+        verificationStatus.className = "auth-verification-status success";
+        isEmailVerified = true;
+        emailInput.readOnly = true;
+        emailInput.style.backgroundColor = "#f5f5f5";
+        sendVerificationBtn.disabled = true;
+        verificationCodeInput.readOnly = true;
+        verificationCodeInput.style.backgroundColor = "#f5f5f5";
+        verifyCodeBtn.disabled = true;
+      } else {
+        verificationStatus.textContent = result.message || "인증 실패";
+        verificationStatus.className = "auth-verification-status error";
+      }
+    } catch (error) {
+      console.error("인증 코드 확인 에러:", error);
+
+      let errorMessage = "서버 오류";
+      if (error instanceof ApiError) {
+        // 백엔드 에러 응답 구조에 맞게 메시지 추출
+        errorMessage = error.data?.error?.message || error.data?.message || error.message;
+      }
+      verificationStatus.textContent = errorMessage;
+      verificationStatus.className = "auth-verification-status error";
+    } finally {
+      if (!isEmailVerified) {
+        verifyCodeBtn.disabled = false;
+      }
+    }
+  });
 
   // 소셜 로그인 버튼
   googleSignupBtn.addEventListener("click", () => {
@@ -104,6 +235,13 @@ export function renderSignup(root) {
     window.location.href = `${backendUrl}/oauth2/authorization/github`;
   });
 
+  kakaoSignupBtn.addEventListener("click", () => {
+    const apiBaseUrl =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+    const backendUrl = apiBaseUrl.replace(/\/api$/, "");
+    window.location.href = `${backendUrl}/oauth2/authorization/kakao`;
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -117,9 +255,17 @@ export function renderSignup(root) {
     const password = fd.get("password");
     const password2 = fd.get("password2");
 
+    console.log("폼 데이터:", { username, name, nickname, email, status, password: "***" });
+
     // ✅ 프론트 최소 검증
-    if (!username || !name || !nickname || !email) {
+    if (!username || !name || !nickname || !email || !status) {
       alert("필수 항목을 모두 입력해라");
+      console.log("누락된 필드:", { username: !!username, name: !!name, nickname: !!nickname, email: !!email, status: !!status });
+      return;
+    }
+
+    if (!isEmailVerified) {
+      alert("이메일 인증을 완료해주세요");
       return;
     }
 

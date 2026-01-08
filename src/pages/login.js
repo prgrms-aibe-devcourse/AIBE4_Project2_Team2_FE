@@ -51,6 +51,12 @@ export function renderLogin(root) {
             </svg>
             GitHub
           </button>
+          <button type="button" class="auth-social-btn kakao" id="kakaoLogin">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 0C3.58 0 0 2.91 0 6.5C0 8.74 1.23 10.71 3.13 11.89L2.38 14.84C2.32 15.06 2.53 15.25 2.73 15.14L6.29 13.03C6.85 13.12 7.42 13.17 8 13.17C12.42 13.17 16 10.26 16 6.67C16 3.08 12.42 0 8 0Z" fill="#3c1e1e"/>
+            </svg>
+            Kakao
+          </button>
         </div>
       </form>
     </div>
@@ -62,6 +68,7 @@ export function renderLogin(root) {
   const toSignup = wrap.querySelector("#toSignup");
   const googleLoginBtn = wrap.querySelector("#googleLogin");
   const githubLoginBtn = wrap.querySelector("#githubLogin");
+  const kakaoLoginBtn = wrap.querySelector("#kakaoLogin");
 
   toSignup.addEventListener("click", () => navigate("/signup"));
 
@@ -76,6 +83,12 @@ export function renderLogin(root) {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
     window.location.href = `${backendUrl}/oauth2/authorization/github`;
+  });
+
+  kakaoLoginBtn.addEventListener("click", () => {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+    const backendUrl = apiBaseUrl.replace(/\/api$/, "");
+    window.location.href = `${backendUrl}/oauth2/authorization/kakao`;
   });
 
   form.addEventListener("submit", async (e) => {
