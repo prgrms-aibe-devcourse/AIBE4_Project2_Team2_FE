@@ -1,0 +1,96 @@
+.request-detail-wrap {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.detail-row .label {
+  width: 100px;
+  color: #666;
+  font-weight: bold;
+}
+
+.document-img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  margin-top: 10px;
+}
+
+/* 타임라인 스타일 */
+.history-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-left: 2px solid #eee;
+  margin-left: 10px;
+}
+
+.history-item {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 20px;
+}
+
+.history-marker {
+  position: absolute;
+  left: -6px;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.history-marker.status-accepted { background: #28a745; }
+.history-marker.status-rejected { background: #dc3545; }
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.history-status {
+  font-weight: bold;
+}
+
+.history-date {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.history-reason {
+  font-size: 0.9rem;
+  color: #dc3545;
+  background: #fff5f5;
+  padding: 8px;
+  border-radius: 4px;
+}

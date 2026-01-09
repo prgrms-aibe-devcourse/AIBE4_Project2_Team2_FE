@@ -1,17 +1,32 @@
-import { PROFILES } from "../data/profiles.js";
+// import { PROFILES } from "../data/profiles.js";
 import { navigate } from "../router.js";
 
 const PAGE_SIZE = 8;
 const APPLY_SLOT_INDEX = 2; // 0-based, 3번째 위치
 
-export function renderHome(root) {
+export async function renderHome(root) {
   const state = {
     query: "",
     page: 1,
+    profiles: [],
   };
 
   const { wrap, render } = buildHome();
   root.appendChild(wrap);
+
+  // 1. 백엔드에서 전공자 카드 목록 조회
+  try {
+      const response = await fetch("/api/major-profiles");
+      if (response.ok) {
+          const json = await response.json();
+          state.profiles = json.data; // 백엔드 데이터 저장
+      } else {
+          console.error("전공자 목록 조회 실패");
+      }
+  } catch (e) {
+      console.error("서버 통신 오류", e);
+  }
+
   render();
 
   function buildHome() {
@@ -171,13 +186,20 @@ export function renderHome(root) {
       card.className = "card";
       card.style.cursor = "pointer";
 
-      const pid = p.id ?? p.profileId ?? p.userId ?? p.name;
+      const pid = p.id; // ?? p.profileId ?? p.userId ?? p.name;
 
       card.addEventListener("click", (e) => {
         if (e.target.closest("[data-tag]")) return;
         if (pid == null) return;
-        navigate(`/profile/${encodeURIComponent(String(pid))}`);
+        // navigate(`/profile/${encodeURIComponent(String(pid))}`);
+        navigate(`/major-profile/${encodeURIComponent(String(pid))}`);
       });
+      
+          // 프로필 이미지 처리
+      const avatarStyle = p.profileImageUrl 
+        ? `background-image: url('${p.profileImageUrl}'); background-size: cover;` 
+        : `background-color: #ddd;`; // 기본 이미지
+
 
       const top = document.createElement("div");
       top.className = "card-top";
@@ -190,7 +212,7 @@ export function renderHome(root) {
 
       const body = document.createElement("div");
       body.className = "card-body";
-      body.textContent = p.intro || "";
+      body.textContent = p.title || "";
       card.appendChild(body);
 
       const tags = document.createElement("div");
