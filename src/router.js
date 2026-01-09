@@ -34,6 +34,8 @@ const routes = {
   "/oauth/callback": renderOAuthCallback,
   "/find-username": renderFindUsername,
   "/find-password": renderFindPassword,
+  "/apply": renderApply,
+  "/recommend": renderRecommend,
   "/manager": renderManager,
 };
 

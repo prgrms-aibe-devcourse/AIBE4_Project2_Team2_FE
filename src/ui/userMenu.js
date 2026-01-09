@@ -1,35 +1,20 @@
 import { navigate } from "../router.js";
 
-const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+const KEY = "mm_session";
 
-function normalizeBaseUrl(v) {
-  const base = (v || "http://localhost:8080/api").trim();
-  return base.endsWith("/") ? base.slice(0, -1) : base;
+function getSession() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
-async function fetchMyDetail() {
-  const url = `${API_BASE_URL}/members/me/detail`;
-
-  const token =
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("ACCESS_TOKEN") ||
-    "";
-
-  const headers = { Accept: "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers,
-    credentials: "include",
-  });
-
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-  const json = await res.json();
-  if (!json || json.success !== true) throw new Error("API success=false");
-
-  return json.data;
+function getNicknameFromSession() {
+  const s = getSession();
+  const nickname = s?.user?.nickname;
+  return String(nickname || "").trim();
 }
 
 export function initUserMenu() {
@@ -123,23 +108,27 @@ export function initUserMenu() {
   }
 
   function doLogout() {
-    alert("로그아웃 처리 위치다.");
+    localStorage.removeItem(KEY);
+    alert("로그아웃되었습니다.");
+    navigate("/login");
   }
 
-  async function loadNicknameFromDetail() {
-    try {
-      const me = await fetchMyDetail();
-      setNickname(me?.nickname);
-    } catch (e) {
-      setNickname("사용자");
-    }
-  }
-
+  // 1) 최초 진입 시 세션 기반 닉네임 적용
   mq.addEventListener("change", syncForViewport);
   syncForViewport();
+  setNickname(getNicknameFromSession());
 
-  setNickname("사용자");
-  loadNicknameFromDetail();
+  // 2) 마이페이지 등에서 세션 갱신 이벤트가 오면 즉시 반영
+  window.addEventListener("mm:session-updated", (e) => {
+    const nick = e?.detail?.user?.nickname;
+    setNickname(String(nick || "").trim() || getNicknameFromSession() || "사용자");
+  });
+
+  // 3) 다른 탭에서 localStorage가 바뀌는 경우도 반영
+  window.addEventListener("storage", (e) => {
+    if (e.key !== KEY) return;
+    setNickname(getNicknameFromSession());
+  });
 
   return { setNickname, closeMenu };
 }
