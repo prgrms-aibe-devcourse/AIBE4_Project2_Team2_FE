@@ -1,5 +1,37 @@
 import { navigate } from "../router.js";
 
+const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+function normalizeBaseUrl(v) {
+  const base = (v || "http://localhost:8080/api").trim();
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+}
+
+async function fetchMyDetail() {
+  const url = `${API_BASE_URL}/members/me/detail`;
+
+  const token =
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("ACCESS_TOKEN") ||
+    "";
+
+  const headers = { Accept: "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers,
+    credentials: "include",
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const json = await res.json();
+  if (!json || json.success !== true) throw new Error("API success=false");
+
+  return json.data;
+}
+
 export function initUserMenu() {
   const btn = document.getElementById("userMenuBtn");
   const menu = document.getElementById("userMenu");
@@ -94,9 +126,20 @@ export function initUserMenu() {
     alert("로그아웃 처리 위치다.");
   }
 
+  async function loadNicknameFromDetail() {
+    try {
+      const me = await fetchMyDetail();
+      setNickname(me?.nickname);
+    } catch (e) {
+      setNickname("사용자");
+    }
+  }
+
   mq.addEventListener("change", syncForViewport);
   syncForViewport();
-  setNickname("공감학생");
+
+  setNickname("사용자");
+  loadNicknameFromDetail();
 
   return { setNickname, closeMenu };
 }

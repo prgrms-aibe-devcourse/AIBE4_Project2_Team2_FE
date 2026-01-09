@@ -20,30 +20,34 @@ export async function login({ username, password }) {
   try {
     const result = await api.post("/auth/login", { username, password });
 
-    if (!result.success) {
-      return { ok: false, message: result.message || "로그인 실패" };
+    if (!result?.success) {
+      return { ok: false, message: result?.message || "로그인 실패" };
     }
 
     const session = {
-      accessToken: result.data.accessToken,
-
-      tokenType: result.data.tokenType,
-      expiresIn: result.data.expiresIn,
+      accessToken: result?.data?.accessToken || "",
+      tokenType: result?.data?.tokenType || "Bearer",
+      expiresIn: result?.data?.expiresIn,
+      tokenUpdatedAt: Date.now(),
     };
 
     localStorage.setItem(KEY, JSON.stringify(session));
 
     try {
-      const userInfo = await api.get("/member/me");
-      if (userInfo.success && userInfo.data) {
+      const userInfo = await api.get("/members/me");
+
+      if (userInfo?.success && userInfo?.data) {
         session.user = {
-          id: userInfo.data.id,
-          email: userInfo.data.email,
-          name: userInfo.data.name,
-          nickname: userInfo.data.nickname,
-          role: userInfo.data.role,
-          memberStatus: userInfo.data.memberStatus,
+          memberId: userInfo.data.memberId ?? "",
+          username: userInfo.data.username ?? "",
+          email: userInfo.data.email ?? "",
+          name: userInfo.data.name ?? "",
+          nickname: userInfo.data.nickname ?? "",
+          profileImageUrl: userInfo.data.profileImageUrl ?? "",
+          status: userInfo.data.status ?? "",
+          role: userInfo.data.role ?? "",
         };
+
         localStorage.setItem(KEY, JSON.stringify(session));
       }
     } catch (error) {
