@@ -34,17 +34,19 @@ export async function login({ username, password }) {
     localStorage.setItem(KEY, JSON.stringify(session));
 
     try {
-      const userInfo = await api.get("/members/me");
+      const userInfo = await api.get("/members/me/detail");
 
       if (userInfo?.success && userInfo?.data) {
         session.user = {
           memberId: userInfo.data.memberId ?? "",
-          username: userInfo.data.username ?? "",
-          email: userInfo.data.email ?? "",
           name: userInfo.data.name ?? "",
           nickname: userInfo.data.nickname ?? "",
+          email: userInfo.data.email ?? "",
+          username: userInfo.data.username ?? "",
           profileImageUrl: userInfo.data.profileImageUrl ?? "",
           status: userInfo.data.status ?? "",
+          university: userInfo.data.university ?? "",
+          major: userInfo.data.major ?? "",
           role: userInfo.data.role ?? "",
         };
 

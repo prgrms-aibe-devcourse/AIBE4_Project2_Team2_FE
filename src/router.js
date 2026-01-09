@@ -18,13 +18,13 @@ const PUBLIC_PATHS = new Set(["/login", "/signup", "/oauth/callback", "/find-use
 const routes = {
   "/": renderHome,
   "/mypage": renderMyPage,
-  "/apply": renderApply,
-  "/recommend": renderRecommend,
   "/login": renderLogin,
   "/signup": renderSignup,
   "/oauth/callback": renderOAuthCallback,
   "/find-username": renderFindUsername,
   "/find-password": renderFindPassword,
+  "/apply": renderApply,
+  "/recommend": renderRecommend,
   "/manager": renderManager,
 };
 
