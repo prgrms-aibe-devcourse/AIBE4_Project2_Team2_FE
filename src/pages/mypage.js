@@ -1,5 +1,4 @@
-import { navigate } from "../router.js";
-import { MOCK_USER } from "../data/mockUser.js";
+import { api } from "../services/api.js";
 import { MY_PAGE_MOCK_DATA } from "../data/mypageMockData.js";
 
 const PAGE_SIZE = 5;
@@ -11,26 +10,78 @@ const TABS = [
   { key: "major", label: "전공생 인터뷰" },
 ];
 
+function emptyUser() {
+  return {
+    memberId: "",
+    name: "",
+    nickname: "",
+    email: "",
+    username: "",
+    profileImageUrl: "",
+    status: "",
+    role: "",
+    university: "",
+    major: "",
+  };
+}
+
+function mapUserFromApi(apiData) {
+  const d = apiData || {};
+  return {
+    memberId: d.memberId ?? "",
+    name: d.name ?? "",
+    nickname: d.nickname ?? "",
+    email: d.email ?? "",
+    username: d.username ?? "",
+    profileImageUrl: d.profileImageUrl ?? "",
+    status: d.status ?? "",
+    role: d.role ?? "",
+  };
+}
+
+async function fetchMyProfile() {
+  const json = await api.get("/members/me");
+  if (!json || json.success !== true) throw new Error("API success=false");
+  return mapUserFromApi(json.data);
+}
+
 export function renderMyPage(root) {
   const state = {
     activeTab: "reviews",
-    pageByTab: {
-      reviews: 1,
-      qna: 1,
-      teacher: 1,
-      major: 1,
-    },
-    user: { ...MOCK_USER },
+    pageByTab: { reviews: 1, qna: 1, teacher: 1, major: 1 },
+    user: emptyUser(),
   };
 
   const wrap = document.createElement("div");
   wrap.className = "mypage-wrap";
 
   wrap.appendChild(renderTitle("마이페이지"));
-  wrap.appendChild(renderProfileCard());
+
+  const profileCard = renderProfileCard();
+  wrap.appendChild(profileCard);
+
   wrap.appendChild(renderTabsCard());
 
   root.appendChild(wrap);
+
+  loadAndApplyUser();
+
+  async function loadAndApplyUser() {
+    try {
+      const me = await fetchMyProfile();
+
+      // 서버 응답에 없는 university/major는 현재 state 값을 유지한다
+      state.user = {
+        ...state.user,
+        ...me,
+      };
+
+      applyUserToProfileCard(profileCard, state.user);
+    } catch {
+      applyUserToProfileCard(profileCard, state.user);
+      alert("내 정보 조회에 실패했다. 로그인 상태, 토큰, 쿠키, CORS 설정을 확인해라.");
+    }
+  }
 
   function renderTitle(text) {
     const h = document.createElement("h2");
@@ -47,12 +98,12 @@ export function renderMyPage(root) {
     head.className = "mypage-profile-head";
     head.innerHTML = `
       <div class="mypage-head-left">
-    <div class="mypage-avatar" aria-hidden="true"></div>
-    <div class="mypage-head-text">
-      <div class="mypage-nickname">${escapeHtml(state.user.nickname)}</div>
-      <div class="mypage-major">${escapeHtml(state.user.major)}</div>
-    </div>
-  </div>
+        <div class="mypage-avatar" aria-hidden="true"></div>
+        <div class="mypage-head-text">
+          <div class="mypage-nickname"></div>
+          <div class="mypage-subline"></div>
+        </div>
+      </div>
     `;
     card.appendChild(head);
 
@@ -67,12 +118,40 @@ export function renderMyPage(root) {
       handleSave(form);
     });
 
+    // 요구사항 반영
+    // 이름(수정불가), 닉네임(수정가능), 아이디(수정불가),
+    // 이메일(가능), 상태(가능), 대학교(가능), 학과(가능),
+    // 비밀번호 입력(현재 비밀번호), 비밀번호 변경(새 비밀번호), 비밀번호 변경확인
     form.appendChild(formRow("이름", "name", state.user.name, { disabled: true }));
     form.appendChild(formRow("닉네임", "nickname", state.user.nickname));
-    form.appendChild(formRow("아이디", "userId", state.user.userId, { disabled: true }));
+    form.appendChild(formRow("아이디", "username", state.user.username, { disabled: true }));
 
-    form.appendChild(formRow("비밀번호 변경", "password", "", { type: "password", placeholder: "새 비밀번호를 입력해라." }));
-    form.appendChild(formRow("비밀번호 확인", "passwordConfirm", "", { type: "password", placeholder: "비밀번호를 다시 입력해라." }));
+    form.appendChild(formRow("이메일", "email", state.user.email, { type: "email" }));
+    form.appendChild(formRow("상태", "status", state.user.status));
+    form.appendChild(formRow("대학교", "university", state.user.university));
+    form.appendChild(formRow("학과", "major", state.user.major));
+
+    form.appendChild(
+      formRow("비밀번호 입력", "currentPassword", "", {
+        type: "password",
+        placeholder: "현재 비밀번호를 입력해라.",
+        autocomplete: "current-password",
+      }),
+    );
+    form.appendChild(
+      formRow("비밀번호 변경", "newPassword", "", {
+        type: "password",
+        placeholder: "새 비밀번호를 입력해라.",
+        autocomplete: "new-password",
+      }),
+    );
+    form.appendChild(
+      formRow("비밀번호 변경확인", "newPasswordConfirm", "", {
+        type: "password",
+        placeholder: "새 비밀번호를 다시 입력해라.",
+        autocomplete: "new-password",
+      }),
+    );
 
     const btnRow = document.createElement("div");
     btnRow.className = "mypage-btn-row";
@@ -86,7 +165,60 @@ export function renderMyPage(root) {
     form.appendChild(btnRow);
 
     card.appendChild(form);
+
+    applyUserToProfileCard(card, state.user);
+
     return card;
+  }
+
+  function applyUserToProfileCard(card, user) {
+    const headNick = card.querySelector(".mypage-nickname");
+    const headSub = card.querySelector(".mypage-subline");
+
+    if (headNick) headNick.textContent = user.nickname || "(닉네임 없음)";
+    if (headSub) headSub.textContent = formatSubline(user);
+
+    const avatar = card.querySelector(".mypage-avatar");
+    if (avatar) {
+      const url = String(user.profileImageUrl || "").trim();
+      if (url) {
+        avatar.style.backgroundImage = `url("${cssSafeUrl(url)}")`;
+        avatar.style.backgroundSize = "cover";
+        avatar.style.backgroundPosition = "center";
+      } else {
+        avatar.style.backgroundImage = "";
+      }
+    }
+
+    setInputValue(card, "name", user.name);
+    setInputValue(card, "nickname", user.nickname);
+    setInputValue(card, "username", user.username);
+    setInputValue(card, "email", user.email);
+    setInputValue(card, "status", user.status);
+    setInputValue(card, "university", user.university);
+    setInputValue(card, "major", user.major);
+  }
+
+  function formatSubline(user) {
+    const uni = String(user.university || "").trim();
+    const major = String(user.major || "").trim();
+    const status = String(user.status || "").trim();
+
+    const parts = [];
+    if (uni) parts.push(uni);
+    if (major) parts.push(major);
+    if (status) parts.push(status);
+
+    return parts.join(" · ");
+  }
+
+  function setInputValue(card, name, value) {
+    const el = card.querySelector(`#mp-${name}`);
+    if (el) el.value = value ?? "";
+  }
+
+  function cssSafeUrl(url) {
+    return String(url).replaceAll('"', "%22").replaceAll(")", "%29");
   }
 
   function formRow(label, name, value, opts = {}) {
@@ -106,43 +238,67 @@ export function renderMyPage(root) {
     input.type = opts.type || "text";
     input.placeholder = opts.placeholder || "";
     if (opts.disabled) input.disabled = true;
+    if (opts.autocomplete) input.autocomplete = opts.autocomplete;
 
     row.appendChild(lab);
     row.appendChild(input);
     return row;
   }
 
+  function isValidEmail(email) {
+    const v = String(email || "").trim();
+    if (!v) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
   function handleSave(form) {
     const fd = new FormData(form);
+
     const nickname = String(fd.get("nickname") || "").trim();
-    const pw = String(fd.get("password") || "");
-    const pw2 = String(fd.get("passwordConfirm") || "");
+    const email = String(fd.get("email") || "").trim();
+    const status = String(fd.get("status") || "").trim();
+    const university = String(fd.get("university") || "").trim();
+    const major = String(fd.get("major") || "").trim();
+
+    const currentPassword = String(fd.get("currentPassword") || "");
+    const newPassword = String(fd.get("newPassword") || "");
+    const newPasswordConfirm = String(fd.get("newPasswordConfirm") || "");
 
     if (!nickname) {
       alert("닉네임을 입력해라.");
       return;
     }
 
-    if (pw || pw2) {
-      if (pw.length < 8) {
-        alert("비밀번호는 8자 이상으로 입력해라.");
+    if (!isValidEmail(email)) {
+      alert("이메일 형식이 올바르지 않다.");
+      return;
+    }
+
+    const passwordTouched = currentPassword || newPassword || newPasswordConfirm;
+    if (passwordTouched) {
+      if (!currentPassword) {
+        alert("비밀번호 입력은 필수다.");
         return;
       }
-      if (pw !== pw2) {
-        alert("비밀번호 확인이 일치하지 않는다.");
+      if (newPassword.length < 8) {
+        alert("비밀번호 변경은 8자 이상으로 입력해라.");
+        return;
+      }
+      if (newPassword !== newPasswordConfirm) {
+        alert("비밀번호 변경확인이 일치하지 않는다.");
         return;
       }
     }
 
     state.user.nickname = nickname;
+    state.user.email = email;
+    state.user.status = status;
+    state.user.university = university;
+    state.user.major = major;
 
-    const nickEl = document.getElementById("nickname");
-    if (nickEl) nickEl.textContent = nickname;
+    applyUserToProfileCard(profileCard, state.user);
 
-    const headNick = wrap.querySelector(".mypage-nickname");
-    if (headNick) headNick.textContent = nickname;
-
-    alert("저장 처리 위치다.");
+    alert("저장 API 연결 위치다.");
   }
 
   function renderTabsCard() {
@@ -188,7 +344,10 @@ export function renderMyPage(root) {
       const nextBtn = e.target.closest("[data-next]");
       if (nextBtn) {
         const max = getTotalPages(state.activeTab);
-        state.pageByTab[state.activeTab] = Math.min(state.pageByTab[state.activeTab] + 1, max);
+        state.pageByTab[state.activeTab] = Math.min(
+          state.pageByTab[state.activeTab] + 1,
+          max,
+        );
         renderActivityBody();
         return;
       }
