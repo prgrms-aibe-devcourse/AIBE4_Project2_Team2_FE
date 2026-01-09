@@ -14,15 +14,19 @@ async function request(endpoint, options = {}) {
 
   const config = {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
   };
 
-  const token = getAccessToken();
-  if (token) {
-    config.headers["Authorization"] = `Bearer ${token}`;
+  // skipAuth 옵션이 없을 때만 Authorization 헤더 추가
+  if (!options.skipAuth) {
+    const token = getAccessToken();
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
   }
 
   try {

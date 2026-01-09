@@ -269,13 +269,34 @@ export function renderSignup(root) {
       return;
     }
 
+    // 비밀번호 유효성 검증
     if (password.length < 8) {
-      alert("비밀번호는 8자 이상이어야 한다");
+      alert("비밀번호는 8자 이상이어야 합니다");
+      return;
+    }
+
+    // 영문, 숫자, 특수문자 포함 여부 검증
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (!hasLetter) {
+      alert("비밀번호는 영문자를 포함해야 합니다");
+      return;
+    }
+
+    if (!hasNumber) {
+      alert("비밀번호는 숫자를 포함해야 합니다");
+      return;
+    }
+
+    if (!hasSpecial) {
+      alert("비밀번호는 특수문자를 포함해야 합니다");
       return;
     }
 
     if (password !== password2) {
-      alert("비밀번호 확인이 일치하지 않는다");
+      alert("비밀번호 확인이 일치하지 않습니다");
       return;
     }
 
