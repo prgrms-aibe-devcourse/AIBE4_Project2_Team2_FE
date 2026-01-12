@@ -140,7 +140,7 @@ export function renderSignup(root) {
     try {
       const result = await api.post("/auth/email/send", {
         email,
-        type: "SIGNUP"
+        type: "SIGNUP",
       });
 
       if (result.success) {
@@ -158,7 +158,8 @@ export function renderSignup(root) {
       let errorMessage = "서버 오류";
       if (error instanceof ApiError) {
         // 백엔드 에러 응답 구조에 맞게 메시지 추출
-        errorMessage = error.data?.error?.message || error.data?.message || error.message;
+        errorMessage =
+          error.data?.error?.message || error.data?.message || error.message;
       }
       emailStatus.textContent = errorMessage;
       emailStatus.className = "auth-verification-status error";
@@ -186,7 +187,7 @@ export function renderSignup(root) {
       const result = await api.post("/auth/email/verify", {
         email,
         code,
-        type: "SIGNUP"
+        type: "SIGNUP",
       });
 
       if (result.success) {
@@ -209,7 +210,8 @@ export function renderSignup(root) {
       let errorMessage = "서버 오류";
       if (error instanceof ApiError) {
         // 백엔드 에러 응답 구조에 맞게 메시지 추출
-        errorMessage = error.data?.error?.message || error.data?.message || error.message;
+        errorMessage =
+          error.data?.error?.message || error.data?.message || error.message;
       }
       verificationStatus.textContent = errorMessage;
       verificationStatus.className = "auth-verification-status error";
@@ -255,12 +257,25 @@ export function renderSignup(root) {
     const password = fd.get("password");
     const password2 = fd.get("password2");
 
-    console.log("폼 데이터:", { username, name, nickname, email, status, password: "***" });
+    console.log("폼 데이터:", {
+      username,
+      name,
+      nickname,
+      email,
+      status,
+      password: "***",
+    });
 
     // ✅ 프론트 최소 검증
     if (!username || !name || !nickname || !email || !status) {
       alert("필수 항목을 모두 입력해라");
-      console.log("누락된 필드:", { username: !!username, name: !!name, nickname: !!nickname, email: !!email, status: !!status });
+      console.log("누락된 필드:", {
+        username: !!username,
+        name: !!name,
+        nickname: !!nickname,
+        email: !!email,
+        status: !!status,
+      });
       return;
     }
 
@@ -294,8 +309,16 @@ export function renderSignup(root) {
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
 
-    if (password.length < 8 || password.length > 20 || !hasLetter || !hasNumber || !hasSpecial) {
-      alert("비밀번호는 영문자, 숫자, 특수기호를 포함해 8자 이상 20자 이하 이어야 합니다");
+    if (
+      password.length < 8 ||
+      password.length > 20 ||
+      !hasLetter ||
+      !hasNumber ||
+      !hasSpecial
+    ) {
+      alert(
+        "비밀번호는 영문자, 숫자, 특수기호를 포함해 8자 이상 20자 이하이어야 합니다"
+      );
       return;
     }
 
@@ -333,7 +356,8 @@ export function renderSignup(root) {
 
       let errorMessage = "서버 연결 오류";
       if (error instanceof ApiError) {
-        errorMessage = error.data?.error?.message || error.data?.message || error.message;
+        errorMessage =
+          error.data?.error?.message || error.data?.message || error.message;
       }
       alert(errorMessage);
     }
