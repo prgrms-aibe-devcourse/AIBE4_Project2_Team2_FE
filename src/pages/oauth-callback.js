@@ -1,6 +1,7 @@
 import { navigate } from "../router.js";
+import { api } from "../services/api.js";
 
-export function renderOAuthCallback(root) {
+export async function renderOAuthCallback(root) {
   const wrap = document.createElement("div");
   wrap.className = "auth-wrap";
 
@@ -17,9 +18,6 @@ export function renderOAuthCallback(root) {
   root.appendChild(wrap);
 
   const params = new URLSearchParams(window.location.search);
-  const accessToken = params.get("accessToken");
-  const tokenType = params.get("tokenType");
-  const expiresIn = params.get("expiresIn");
   const error = params.get("error");
 
   if (error) {
@@ -28,20 +26,37 @@ export function renderOAuthCallback(root) {
     return;
   }
 
-  if (!accessToken) {
-    alert("소셜 로그인 토큰을 받지 못했습니다");
+  // 쿠키 기반 인증: 서버가 이미 쿠키를 설정했으므로 토큰 파라미터 불필요
+  // 사용자 정보만 조회하여 저장
+  try {
+    const userInfo = await api.get("/members/me");
+
+    if (userInfo?.success && userInfo?.data) {
+      const user = {
+        memberId: userInfo.data.memberId ?? "",
+        name: userInfo.data.name ?? "",
+        nickname: userInfo.data.nickname ?? "",
+        email: userInfo.data.email ?? "",
+        username: userInfo.data.username ?? "",
+        profileImageUrl: userInfo.data.profileImageUrl ?? "",
+        status: userInfo.data.status ?? "",
+        university: userInfo.data.university ?? "",
+        major: userInfo.data.major ?? "",
+        role: userInfo.data.role ?? "",
+      };
+
+      localStorage.setItem("mm_user", JSON.stringify(user));
+    } else {
+      alert("사용자 정보 조회 실패");
+      window.location.replace("/login");
+      return;
+    }
+  } catch (error) {
+    console.error("사용자 정보 조회 실패:", error);
+    alert("사용자 정보 조회 실패");
     window.location.replace("/login");
     return;
   }
-
-  const session = {
-    accessToken,
-    tokenType: tokenType || "Bearer",
-    expiresIn: expiresIn ? Number(expiresIn) : null,
-    tokenUpdatedAt: Date.now(),
-  };
-
-  localStorage.setItem("mm_session", JSON.stringify(session));
 
   /**
    * ★ 핵심 수정

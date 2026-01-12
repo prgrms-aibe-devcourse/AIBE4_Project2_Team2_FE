@@ -1,5 +1,6 @@
 import { navigate } from "../router.js";
 import { REVIEWS_BY_PROFILE, QNA_BY_PROFILE } from "../data/profileDetailData.js";
+import { api } from "../services/api.js";
 
 const PAGE_SIZE = 5;
 
@@ -9,12 +10,11 @@ export async function renderProfileDetail(root, { id }) { // async 추가
 
   let profile = null;
   try {
-      const response = await fetch(`/api/major-profiles/${id}`);
-      if (response.ok) {
-          const json = await response.json();
-          profile = json.data;
+      const result = await api.get(`/major-profiles/${id}`);
+      if (result?.success) {
+          profile = result.data;
       } else {
-          console.error("프로필 조회 실패");
+          console.error("프로필 조회 실패:", result?.message);
       }
   } catch (e) {
       console.error("서버 통신 오류", e);

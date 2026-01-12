@@ -1,5 +1,5 @@
 import { navigate } from "../router.js";
-import { api, ApiError } from "../services/api.js";
+import { api } from "../services/api.js";
 
 export async function renderMajorRequestDetail(root, params) {
   const requestId = params.id;

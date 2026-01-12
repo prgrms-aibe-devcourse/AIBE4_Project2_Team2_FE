@@ -1,4 +1,5 @@
 import { navigate } from "../router.js";
+import { getSession } from "../auth/auth.js";
 
 export function renderApply(root) {
   const wrap = document.createElement("div");
@@ -55,6 +56,7 @@ export function renderApply(root) {
   `;
 
   root.appendChild(wrap);
+  const session = getSession();
 
   const form = wrap.querySelector("#applyForm");
   const cancelBtn = wrap.querySelector("#cancelBtn");
@@ -65,26 +67,19 @@ export function renderApply(root) {
   const schoolInput = wrap.querySelector("#school");
   const majorInput = wrap.querySelector("#major");
 
-  // 1. 로컬 스토리지에서 내 정보 조회 및 표시
+  // 1. 세션에서 내 정보 조회 및 표시
   try {
-    const storedSession = localStorage.getItem("mm_session");
+    const member = session?.user;
 
-    if (storedSession) {
-      const session = JSON.parse(storedSession);
-      // mm_session 구조에 따라 session.user에서 데이터를 꺼내야 함
-      const user = session.user;
-
-      if (user) {
-        // 로컬 스토리지 구조와 일치하는 필드명 매핑
-        usernameInput.value = user.username || "";
-        nameInput.value = user.name || "";
-        nicknameInput.value = user.nickname || "";
-        schoolInput.value = user.university || "";
-        majorInput.value = user.major || "";
-      }
+    if (member) {
+      // 필드명 매핑
+      usernameInput.value = member.username || "";
+      nameInput.value = member.name || "";
+      nicknameInput.value = member.nickname || "";
+      schoolInput.value = member.university || "";
+      majorInput.value = member.major || "";
     } else {
-      console.warn("로컬 스토리지에 세션 정보가 없습니다.");
-      // navigate("/login");
+      console.warn("세션에 회원 정보가 없습니다.");
     }
   } catch (e) {
     console.error("세션 데이터 파싱 오류:", e);
@@ -153,8 +148,6 @@ export function renderApply(root) {
     }
 
     try {
-      const sessionStr = localStorage.getItem("mm_session");
-      const session = sessionStr ? JSON.parse(sessionStr) : null;
       const token = session?.accessToken;
 
       // 백엔드 엔드포인트 URL 조합

@@ -1,4 +1,5 @@
 // import { PROFILES } from "../data/profiles.js";
+import { getSession } from "../auth/auth.js";
 import { navigate } from "../router.js";
 import { api, ApiError } from "../services/api.js";
 
@@ -123,7 +124,7 @@ export async function renderHome(root) {
     }
 
     function getFilteredProfiles() {
-      const arr = Array.isArray(PROFILES) ? PROFILES : [];
+      const arr = Array.isArray(state.profiles) ? state.profiles : [];
       return arr.filter((p) => matches(p, state.query));
     }
 
@@ -147,6 +148,7 @@ export async function renderHome(root) {
         pageProfiles = profiles.slice(0, PAGE_SIZE - 1);
       } else {
         const offset = PAGE_SIZE - 1 + (safePage - 2) * PAGE_SIZE;
+        const offset = PAGE_SIZE - 1 + (safePage - 2) * PAGE_SIZE;
         pageProfiles = profiles.slice(offset, offset + PAGE_SIZE);
       }
 
@@ -159,13 +161,24 @@ export async function renderHome(root) {
           ...pageProfiles
             .slice(0, insertAt)
             .map((p) => ({ type: "profile", data: p })),
+          ...pageProfiles
+            .slice(0, insertAt)
+            .map((p) => ({ type: "profile", data: p })),
           { type: "apply" },
+          ...pageProfiles
+            .slice(insertAt)
+            .map((p) => ({ type: "profile", data: p })),
           ...pageProfiles
             .slice(insertAt)
             .map((p) => ({ type: "profile", data: p })),
         ];
 
         for (const card of combined) {
+          grid.appendChild(
+            card.type === "apply"
+              ? renderApplyCard()
+              : renderProfileCard(card.data)
+          );
           grid.appendChild(
             card.type === "apply"
               ? renderApplyCard()
@@ -217,6 +230,10 @@ export async function renderHome(root) {
       // 프로필 이미지 처리
       const avatarStyle = p.profileImageUrl
         ? `background-image: url('${p.profileImageUrl}'); background-size: cover;`
+
+      // 프로필 이미지 처리
+      const avatarStyle = p.profileImageUrl
+        ? `background-image: url('${p.profileImageUrl}'); background-size: cover;`
         : `background-color: #ddd;`; // 기본 이미지
 
       const top = document.createElement("div");
@@ -224,6 +241,9 @@ export async function renderHome(root) {
       top.innerHTML = `
         <div class="card-avatar" aria-hidden="true"></div>
         <h3 class="card-title">${escapeHtml(p.name)}</h3>
+        <p class="card-sub">${escapeHtml(p.school)}<br />${escapeHtml(
+        p.major
+      )}</p>
         <p class="card-sub">${escapeHtml(p.school)}<br />${escapeHtml(
         p.major
       )}</p>
@@ -254,7 +274,7 @@ export async function renderHome(root) {
       const card = document.createElement("article");
       card.className = "card";
 
-      // 1. 로컬 스토리지에서 세션 정보 및 지원 상태 가져오기
+        // 1. 로컬 스토리지에서 세션 정보 및 지원 상태 가져오기
       let applicationStatus = "";
       try {
         const storedSession = localStorage.getItem("mm_session");

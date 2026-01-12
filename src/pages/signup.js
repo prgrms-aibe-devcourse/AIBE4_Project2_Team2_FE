@@ -269,29 +269,33 @@ export function renderSignup(root) {
       return;
     }
 
-    // 비밀번호 유효성 검증
-    if (password.length < 8) {
-      alert("비밀번호는 8자 이상이어야 합니다");
+    // 사용자 이름, 이름, 닉네임 유효성 검증 (2자 이상 20자 이하)
+    if (username.length < 2 || username.length > 20) {
+      alert("아이디는 2자 이상 20자 이하 이어야 합니다");
+      return;
+    }
+    if (name.length < 2 || name.length > 20) {
+      alert("이름은 2자 이상 20자 이하 이어야 합니다");
+      return;
+    }
+    if (nickname.length < 2 || nickname.length > 20) {
+      alert("닉네임은 2자 이상 20자 이하 이어야 합니다");
       return;
     }
 
-    // 영문, 숫자, 특수문자 포함 여부 검증
+    // 이메일 유효성 검증 (255자 이하)
+    if (email.length > 255) {
+      alert("이메일은 255자 이내여야 합니다");
+      return;
+    }
+
+    // 비밀번호 유효성 검증 (영문자, 숫자, 특수기호 포함 8자 이상 20자 이하)
     const hasLetter = /[a-zA-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
 
-    if (!hasLetter) {
-      alert("비밀번호는 영문자를 포함해야 합니다");
-      return;
-    }
-
-    if (!hasNumber) {
-      alert("비밀번호는 숫자를 포함해야 합니다");
-      return;
-    }
-
-    if (!hasSpecial) {
-      alert("비밀번호는 특수문자를 포함해야 합니다");
+    if (password.length < 8 || password.length > 20 || !hasLetter || !hasNumber || !hasSpecial) {
+      alert("비밀번호는 영문자, 숫자, 특수기호를 포함해 8자 이상 20자 이하 이어야 합니다");
       return;
     }
 

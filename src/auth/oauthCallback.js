@@ -1,23 +1,6 @@
+// 이 파일은 사용되지 않습니다. oauth-callback.js를 사용하세요.
+// 쿠키 기반 인증으로 변경되어 더 이상 필요하지 않습니다.
+
 export function handleOAuthCallback() {
-  const params = new URLSearchParams(window.location.search);
-
-  const accessToken = params.get("accessToken");
-  const tokenType = params.get("tokenType");
-  const expiresIn = params.get("expiresIn");
-
-  if (!accessToken) {
-    console.error("OAuth2 accessToken 없음");
-    return;
-  }
-
-  const session = {
-    accessToken,
-    tokenType,
-    expiresIn,
-    tokenUpdatedAt: Date.now(),
-  };
-
-  localStorage.setItem(KEY, JSON.stringify(session));
-
-  window.location.replace("/#/"); // ⬅ 이게 중요
+  console.warn("이 함수는 더 이상 사용되지 않습니다. oauth-callback.js를 사용하세요.");
 }

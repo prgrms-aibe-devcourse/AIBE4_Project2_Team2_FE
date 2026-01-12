@@ -11,7 +11,10 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 실제 API 연동 및 로그인 방식 개선\n\n- API 연동: 실제 백엔드 API 연동 구현 \\(services/api.js 추가\\)\n- 로그인: 이메일 대신 아이디로 로그인하도록 변경\n- 회원가입: memberType 필드명 수정으로 백엔드 요구사항 반영\n- 토큰 관리: JWT 토큰 기반 인증 및 자동 갱신 기능 구현\n- 개발 환경: Vite 개발 서버 설정 및 환경 변수 추가\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git push:*)",
       "Bash(git pull:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 로그인/회원가입 에러 메시지 개선 및 API 인증 설정 추가\n\n- 로그인 시 백엔드의 상세 에러 메시지 표시\n- 회원가입 비밀번호 유효성 검증 강화 \\(영문, 숫자, 특수문자 개별 체크\\)\n- API 요청에 credentials: include 추가하여 쿠키 자동 전송\n- skipAuth 옵션 추가 \\(필요 시 Authorization 헤더 제외\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }

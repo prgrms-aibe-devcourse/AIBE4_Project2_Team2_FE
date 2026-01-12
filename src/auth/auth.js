@@ -1,11 +1,20 @@
 import { api, ApiError } from "../services/api.js";
 
-const KEY = "mm_session";
+const KEY = "mm_user";
+
+// 기존 mm_session 제거 (마이그레이션)
+if (localStorage.getItem("mm_session")) {
+  console.log("🧹 기존 mm_session 제거 중...");
+  localStorage.removeItem("mm_session");
+}
 
 export function getSession() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    // 쿠키 기반이므로 user 정보만 반환
+    return { user };
   } catch {
     return null;
   }
@@ -13,31 +22,29 @@ export function getSession() {
 
 export function isLoggedIn() {
   const s = getSession();
-  return Boolean(s && s.accessToken);
+  return Boolean(s && s.user);
 }
 
 export async function login({ username, password }) {
   try {
+    console.log("🔐 로그인 시도:", username);
     const result = await api.post("/auth/login", { username, password });
+    console.log("✅ 로그인 응답:", result);
 
     if (!result?.success) {
+      console.error("❌ 로그인 실패:", result);
       return { ok: false, message: result?.message || "로그인 실패" };
     }
 
-    const session = {
-      accessToken: result?.data?.accessToken || "",
-      tokenType: result?.data?.tokenType || "Bearer",
-      expiresIn: result?.data?.expiresIn,
-      tokenUpdatedAt: Date.now(),
-    };
-
-    localStorage.setItem(KEY, JSON.stringify(session));
-
+    // 쿠키 기반 인증: 토큰은 서버가 쿠키로 설정하므로 저장 불필요
+    // 사용자 정보만 조회하여 저장
     try {
+      console.log("👤 사용자 정보 조회 시작");
       const userInfo = await api.get("/members/me");
+      console.log("✅ 사용자 정보 응답:", userInfo);
 
       if (userInfo?.success && userInfo?.data) {
-        session.user = {
+        const user = {
           memberId: userInfo.data.memberId ?? "",
           name: userInfo.data.name ?? "",
           nickname: userInfo.data.nickname ?? "",
@@ -50,42 +57,33 @@ export async function login({ username, password }) {
           role: userInfo.data.role ?? "",
         };
 
-        localStorage.setItem(KEY, JSON.stringify(session));
+        localStorage.setItem(KEY, JSON.stringify(user));
+        console.log("✅ 사용자 정보 저장 완료:", user);
+        loadApplicationStatus();
+        return { ok: true, user };
+      } else {
+        console.error("❌ 사용자 정보 형식 오류:", userInfo);
+        return { ok: false, message: "사용자 정보 조회 실패" };
       }
     } catch (error) {
-      console.warn("사용자 정보 조회 실패:", error);
-    }
-
-    try {
-      const requestInfo = await api.get("/major-requests/me");
-
-      // user 객체가 이미 세션에 생성되어 있다고 가정
-      if (session.user) {
-        if (
-          requestInfo?.success &&
-          Array.isArray(requestInfo.data) &&
-          requestInfo.data.length > 0
-        ) {
-          const latest = requestInfo.data[0];
-
-          // user 객체 안에 직접 추가
-          session.user.applicationStatus = latest.applicationStatus ?? "";
-          session.user.requestId = latest.id ?? null;
-          session.user.rejectReason = latest.reason ?? ""; // 반려 시 사유 확인용
-        } else {
-          // 신청 이력이 없는 경우
-          session.user.applicationStatus = "NONE";
-        }
-
-        // 최종적으로 한 번만 저장
-        localStorage.setItem(KEY, JSON.stringify(session));
+      console.error("❌ 사용자 정보 조회 실패:", error);
+      if (error instanceof ApiError) {
+        console.error("  - Status:", error.status);
+        console.error("  - Data:", error.data);
+        console.error("  - Message:", error.message);
+        return {
+          ok: false,
+          message:
+            error.data?.message || error.message || "사용자 정보 조회 실패",
+        };
       }
-    } catch (error) {
-      console.warn("지원 정보 통합 실패:", error);
+      return { ok: false, message: "사용자 정보 조회 실패" };
     }
-    return { ok: true, session };
   } catch (error) {
+    console.error("❌ 로그인 오류:", error);
     if (error instanceof ApiError) {
+      console.error("  - Status:", error.status);
+      console.error("  - Data:", error.data);
       // 백엔드의 상세 에러 메시지 추출
       const errorMessage =
         error.data?.error?.message || error.data?.message || error.message;
@@ -95,6 +93,37 @@ export async function login({ username, password }) {
   }
 }
 
+export async function loadApplicationStatus() {
+  try {
+    const requestInfo = await api.get("/major-requests/me");
+
+    // user 객체가 이미 세션에 생성되어 있다고 가정
+    if (session.user) {
+      if (
+        requestInfo?.success &&
+        Array.isArray(requestInfo.data) &&
+        requestInfo.data.length > 0
+      ) {
+        const latest = requestInfo.data[0];
+
+        // user 객체 안에 직접 추가
+        session.user.applicationStatus = latest.applicationStatus ?? "";
+        session.user.requestId = latest.id ?? null;
+        session.user.rejectReason = latest.reason ?? ""; // 반려 시 사유 확인용
+      } else {
+        // 신청 이력이 없는 경우
+        session.user.applicationStatus = "NONE";
+      }
+
+      // 최종적으로 한 번만 저장
+      localStorage.setItem(KEY, JSON.stringify(session));
+    }
+  } catch (error) {
+    console.warn("지원 정보 통합 실패:", error);
+  }
+  return { ok: true, session };
+}
+
 export async function logout() {
   try {
     await api.post("/auth/logout");
@@ -102,5 +131,7 @@ export async function logout() {
     console.error("로그아웃 API 호출 실패:", error);
   } finally {
     localStorage.removeItem(KEY);
+    // 혹시 남아있을 수 있는 기존 키도 제거
+    localStorage.removeItem("mm_session");
   }
 }

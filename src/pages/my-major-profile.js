@@ -1,4 +1,5 @@
 import { navigate } from "../router.js";
+import { api } from "../services/api.js";
 
 export async function renderMyMajorProfile(root) {
   const wrap = document.createElement("div");
@@ -15,31 +16,21 @@ export async function renderMyMajorProfile(root) {
   const contentArea = wrap.querySelector("#contentArea");
 
   try {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      alert("로그인이 필요합니다.");
-      navigate("/login");
-      return;
-    }
+    const result = await api.get("/major-profiles/me");
 
-    const response = await fetch("/api/major-profiles/me", {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-
-    if (response.ok) {
-      const json = await response.json();
-      const profile = json.data;
+    if (result?.success) {
+      const profile = result.data;
 
       if (profile) {
         // 프로필 있음 -> 조회 모드
         renderViewMode(contentArea, profile);
       } else {
         // 프로필 없음 -> 생성 모드 (폼 바로 노출)
-        renderEditMode(contentArea, null); 
+        renderEditMode(contentArea, null);
       }
     } else {
       // 에러 처리
-      contentArea.innerHTML = `<div class="error">불러오기 실패</div>`;
+      contentArea.innerHTML = `<div class="error">불러오기 실패: ${result?.message || ""}</div>`;
     }
   } catch (error) {
     console.error(error);
@@ -95,12 +86,8 @@ function renderViewMode(container, profile) {
     const isActive = e.target.checked;
     statusText.textContent = isActive ? "공개중" : "비공개";
     try {
-      const token = localStorage.getItem("accessToken");
-      await fetch("/api/major-profiles/status", {
-        method: "PATCH",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-    } catch (e) {
+      await api.patch("/major-profiles/status");
+    } catch (err) {
       alert("상태 변경 실패");
       e.target.checked = !isActive;
     }
@@ -187,24 +174,15 @@ function renderEditMode(container, profile) {
     };
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const url = "/api/major-profiles";
-      const method = isEdit ? "PATCH" : "POST";
+      const result = isEdit
+        ? await api.patch("/major-profiles", payload)
+        : await api.post("/major-profiles", payload);
 
-      const res = await fetch(url, {
-        method: method,
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
+      if (result?.success) {
         alert(isEdit ? "수정되었습니다." : "생성되었습니다.");
-        location.reload(); 
+        location.reload();
       } else {
-        alert("저장 실패");
+        alert("저장 실패: " + (result?.message || ""));
       }
     } catch (err) {
       console.error(err);

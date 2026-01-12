@@ -1,11 +1,13 @@
 import { navigate } from "../router.js";
 
-const KEY = "mm_session";
+const KEY = "mm_user";
 
 function getSession() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    return { user };
   } catch {
     return null;
   }
@@ -109,6 +111,8 @@ export function initUserMenu() {
 
   function doLogout() {
     localStorage.removeItem(KEY);
+    // 혹시 남아있을 수 있는 기존 키도 제거
+    localStorage.removeItem("mm_session");
     alert("로그아웃되었습니다.");
     navigate("/login");
   }

@@ -34,30 +34,29 @@ function joinUrl(base, endpoint) {
 
 function getSession() {
   try {
-    const raw = localStorage.getItem("mm_session");
-    return raw ? JSON.parse(raw) : null;
+    const raw = localStorage.getItem("mm_user");
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    return { user };
   } catch {
     return null;
   }
 }
 
-function setSession(nextSession) {
+function setSession(user) {
   try {
-    localStorage.setItem("mm_session", JSON.stringify(nextSession));
+    localStorage.setItem("mm_user", JSON.stringify(user));
   } catch {}
 }
 
 function mergeSessionUser(patch) {
   const s = getSession() || {};
-  const next = {
-    ...s,
-    user: {
-      ...(s.user || {}),
-      ...patch,
-    },
+  const nextUser = {
+    ...(s.user || {}),
+    ...patch,
   };
-  setSession(next);
-  return next;
+  setSession(nextUser);
+  return { user: nextUser };
 }
 
 function injectMyPageStylesOnce() {
@@ -191,7 +190,7 @@ function mapUserFromApi(apiData) {
 }
 
 async function fetchMyDetail() {
-  const json = await api.get("/members/me/detail");
+  const json = await api.get("/members/me");
   if (!json || json.success !== true) throw new Error("API success=false");
   return mapUserFromApi(json.data);
 }
@@ -207,22 +206,19 @@ async function fetchWrittenReviews() {
 
 async function patchMyDetailWithFallback(payload) {
   if (typeof api.patch === "function") {
-    const json = await api.patch("/members/me/detail", payload);
+    const json = await api.patch("/members/me", payload);
     if (!json || json.success !== true)
       throw new Error(json?.message || "API success=false");
     return json.data;
   }
 
-  const token = getSession()?.accessToken;
-  const tokenType = getSession()?.tokenType || "Bearer";
-
-  const res = await fetch(joinUrl(API_BASE_URL, "/members/me/detail"), {
+  // 쿠키 기반 인증: Authorization 헤더 불필요
+  const res = await fetch(joinUrl(API_BASE_URL, "/members/me"), {
     method: "PATCH",
     credentials: "include",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `${tokenType} ${token}` } : {}),
     },
     body: JSON.stringify(payload),
   });

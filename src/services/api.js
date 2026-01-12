@@ -75,18 +75,20 @@ async function request(endpoint, options = {}) {
     config.headers["Accept"] = "application/json";
   }
 
-  // skipAuth 옵션이 없을 때만 Authorization 헤더 추가
-  if (!options.skipAuth) {
-    const token = getAccessToken();
-    const tokenType = getTokenType();
-    if (token) {
-      config.headers["Authorization"] = `${tokenType} ${token}`;
-    }
-  }
+  // 쿠키 기반 인증: Authorization 헤더 불필요
+  // 브라우저가 자동으로 쿠키를 포함하여 전송 (credentials: 'include')
 
   try {
+    console.log(`🌐 API 요청: ${config.method} ${url}`);
+    console.log("  - Headers:", config.headers);
+    console.log("  - Credentials:", config.credentials);
+
     const response = await fetch(url, config);
     const data = await safeParseResponse(response);
+
+    console.log(`📥 API 응답: ${config.method} ${url}`);
+    console.log("  - Status:", response.status);
+    console.log("  - Data:", data);
 
     if (response.ok) return data;
 
@@ -96,20 +98,8 @@ async function request(endpoint, options = {}) {
     if (response.status === 401 && !isRefreshEndpoint) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        const retryConfig = {
-          ...config,
-          headers: { ...config.headers },
-        };
-
-        const retryToken = getAccessToken();
-        const retryTokenType = getTokenType();
-        if (retryToken) {
-          retryConfig.headers["Authorization"] = `${retryTokenType} ${retryToken}`;
-        } else {
-          delete retryConfig.headers["Authorization"];
-        }
-
-        const retryResponse = await fetch(url, retryConfig);
+        // 쿠키가 갱신되었으므로 동일한 요청 재시도
+        const retryResponse = await fetch(url, config);
         const retryData = await safeParseResponse(retryResponse);
 
         if (!retryResponse.ok) {
@@ -136,24 +126,8 @@ async function request(endpoint, options = {}) {
   }
 }
 
-function getSession() {
-  try {
-    const raw = localStorage.getItem("mm_session");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getAccessToken() {
-  const session = getSession();
-  return session?.accessToken || null;
-}
-
-function getTokenType() {
-  const session = getSession();
-  return session?.tokenType || "Bearer";
-}
+// 쿠키 기반 인증: 세션 정보 조회 불필요
+// 사용자 정보는 auth.js의 getSession()을 통해 관리
 
 async function refreshAccessToken() {
   try {
@@ -167,22 +141,16 @@ async function refreshAccessToken() {
 
     const result = await safeParseResponse(response);
 
-    if (!response.ok || !result?.success) return false;
-
-    const session = getSession() || {};
-    session.accessToken = result.data?.accessToken;
-    session.tokenType = result.data?.tokenType || "Bearer";
-    session.expiresIn = result.data?.expiresIn;
-    session.tokenUpdatedAt = Date.now();
-
-    localStorage.setItem("mm_session", JSON.stringify(session));
-    return true;
+    // 쿠키 기반 인증: 서버가 새 쿠키를 설정하므로 localStorage 갱신 불필요
+    return response.ok && result?.success;
   } catch {
     return false;
   }
 }
 
 function logoutLocal() {
+  localStorage.removeItem("mm_user");
+  // 혹시 남아있을 수 있는 기존 키도 제거
   localStorage.removeItem("mm_session");
 }
 
