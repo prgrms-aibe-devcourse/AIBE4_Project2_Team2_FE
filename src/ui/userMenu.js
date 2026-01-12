@@ -1,8 +1,10 @@
+// src/ui/userMenu.js
 import { navigate } from "../router.js";
+import { logout as serverLogout } from "../auth/auth.js";
 
-const KEY = "mm_session";
+const KEY = "mm_user";
 
-function getSession() {
+function readUser() {
   try {
     const raw = localStorage.getItem(KEY);
     return raw ? JSON.parse(raw) : null;
@@ -11,124 +13,131 @@ function getSession() {
   }
 }
 
-function getNicknameFromSession() {
-  const s = getSession();
-  const nickname = s?.user?.nickname;
-  return String(nickname || "").trim();
+function applyHeaderNickname(user) {
+  const nick = String(user?.nickname || "").trim() || "사용자";
+
+  const deskNick = document.getElementById("deskNickname");
+  const menuNick = document.getElementById("menuNickname");
+
+  if (deskNick) deskNick.textContent = nick;
+  if (menuNick) menuNick.textContent = nick;
+}
+
+function applyHeaderName(user) {
+  // 상단에 이름을 표시하는 엘리먼트가 있으면 반영
+  // (지금 index.html에는 name 전용 id가 없어서, 있으면만 적용한다)
+  const name = String(user?.name || "").trim();
+  const nameEl = document.getElementById("deskName");
+  const menuNameEl = document.getElementById("menuName");
+
+  if (nameEl) nameEl.textContent = name || "";
+  if (menuNameEl) menuNameEl.textContent = name || "";
+}
+
+function applyHeaderAvatar(user) {
+  const url = String(user?.profileImageUrl || "").trim();
+  const avatarSpan = document.querySelector("#avatarBtn .avatar");
+  if (!avatarSpan) return;
+
+  if (!url) {
+    avatarSpan.style.removeProperty("background-image");
+    avatarSpan.style.removeProperty("background-size");
+    avatarSpan.style.removeProperty("background-position");
+    avatarSpan.style.removeProperty("background-repeat");
+    return;
+  }
+
+  avatarSpan.style.backgroundImage = `url("${url}")`;
+  avatarSpan.style.backgroundSize = "cover";
+  avatarSpan.style.backgroundPosition = "center";
+  avatarSpan.style.backgroundRepeat = "no-repeat";
+}
+
+function applyAll(user) {
+  applyHeaderNickname(user);
+  applyHeaderName(user);
+  applyHeaderAvatar(user);
+}
+
+function mergeUser(prev, next) {
+  const p = prev && typeof prev === "object" ? prev : {};
+  const n = next && typeof next === "object" ? next : {};
+  return { ...p, ...n };
+}
+
+function writeUser(user) {
+  try {
+    if (!user) {
+      localStorage.removeItem(KEY);
+      return;
+    }
+    localStorage.setItem(KEY, JSON.stringify(user));
+  } catch {}
 }
 
 export function initUserMenu() {
-  const btn = document.getElementById("userMenuBtn");
-  const menu = document.getElementById("userMenu");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const menuNick = document.getElementById("userMenuNickname");
-  const headerNick = document.getElementById("headerNickname");
+  // 최초 1회 적용
+  applyAll(readUser());
 
-  if (!btn || !menu) return;
-
-  const mq = window.matchMedia("(max-width: 720px)");
-
-  function setNickname(nickname) {
-    const safe = String(nickname || "").trim() || "사용자";
-    if (headerNick) headerNick.textContent = safe;
-    if (menuNick) menuNick.textContent = safe;
-  }
-
-  function openMenu() {
-    menu.classList.add("open");
-    btn.setAttribute("aria-expanded", "true");
-  }
-
-  function closeMenu() {
-    menu.classList.remove("open");
-    btn.setAttribute("aria-expanded", "false");
-  }
-
-  function toggleMenu() {
-    if (!mq.matches) return;
-    if (menu.classList.contains("open")) closeMenu();
-    else openMenu();
-  }
-
-  function syncForViewport() {
-    if (mq.matches) {
-      btn.disabled = false;
-      btn.classList.remove("avatar-btn--disabled");
-      btn.setAttribute("aria-haspopup", "menu");
-      btn.setAttribute("aria-expanded", "false");
-    } else {
-      closeMenu();
-      btn.disabled = true;
-      btn.classList.add("avatar-btn--disabled");
-      btn.removeAttribute("aria-haspopup");
-      btn.removeAttribute("aria-expanded");
-    }
-  }
-
-  btn.addEventListener("click", (e) => {
-    if (!mq.matches) return;
-    e.preventDefault();
-    e.stopPropagation();
-    toggleMenu();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!mq.matches) return;
-    const t = e.target;
-    if (btn.contains(t) || menu.contains(t)) return;
-    closeMenu();
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (!mq.matches) return;
-    if (e.key === "Escape") closeMenu();
-  });
-
-  window.addEventListener("hashchange", () => closeMenu());
-
-  menu.addEventListener("click", (e) => {
-    const item = e.target.closest("[data-action]");
-    if (!item) return;
-
-    const action = item.getAttribute("data-action");
-    closeMenu();
-
-    if (action === "mypage") {
-      navigate("/mypage");
-      return;
-    }
-
-    if (action === "logout") {
-      doLogout();
-    }
-  });
-
+  // 상단(데스크탑) 로그아웃
+  const logoutBtn = document.getElementById("btnLogout");
   if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => doLogout());
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await serverLogout();
+      } finally {
+        localStorage.removeItem(KEY);
+        localStorage.removeItem("mm_session");
+        navigate("/login");
+      }
+    });
   }
 
-  function doLogout() {
-    localStorage.removeItem(KEY);
-    alert("로그아웃되었습니다.");
-    navigate("/login");
+  // 모바일 메뉴 로그아웃(있다면)
+  const menuLogout = document.getElementById("menuLogout");
+  if (menuLogout) {
+    menuLogout.addEventListener("click", async () => {
+      try {
+        await serverLogout();
+      } finally {
+        localStorage.removeItem(KEY);
+        localStorage.removeItem("mm_session");
+        navigate("/login");
+      }
+    });
   }
 
-  // 1) 최초 진입 시 세션 기반 닉네임 적용
-  mq.addEventListener("change", syncForViewport);
-  syncForViewport();
-  setNickname(getNicknameFromSession());
-
-  // 2) 마이페이지 등에서 세션 갱신 이벤트가 오면 즉시 반영
-  window.addEventListener("mm:session-updated", (e) => {
-    const nick = e?.detail?.user?.nickname;
-    setNickname(String(nick || "").trim() || getNicknameFromSession() || "사용자");
+  // 마이페이지 등에서 사용자 정보 갱신 이벤트 오면 즉시 반영
+  // detail.user에 "전체 user" 또는 "부분 patch" 둘 다 허용
+  window.addEventListener("mm:user-updated", (e) => {
+    const incoming = e?.detail?.user;
+    const merged = mergeUser(readUser(), incoming);
+    writeUser(merged);
+    applyAll(merged);
   });
 
-  // 3) 다른 탭에서 localStorage가 바뀌는 경우도 반영
+  // 이전 이벤트 이름도 호환 유지
+  window.addEventListener("mm:session-updated", (e) => {
+    const incoming = e?.detail?.user;
+    const merged = mergeUser(readUser(), incoming);
+    writeUser(merged);
+    applyAll(merged);
+  });
+
+  // 같은 탭에서 localStorage가 바뀌어도 즉시 반영되게 커스텀 이벤트 지원
+  window.addEventListener("mm:user-storage-sync", () => {
+    applyAll(readUser());
+  });
+
+  // 다른 탭에서 storage 바뀌면 반영
   window.addEventListener("storage", (e) => {
     if (e.key !== KEY) return;
-    setNickname(getNicknameFromSession());
+    applyAll(readUser());
   });
 
-  return { setNickname, closeMenu };
+  return {
+    refresh() {
+      applyAll(readUser());
+    },
+  };
 }

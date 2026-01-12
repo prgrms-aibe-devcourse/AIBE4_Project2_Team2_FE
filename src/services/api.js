@@ -1,3 +1,4 @@
+// src/services/api.js
 const RAW_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 const API_BASE_URL = normalizeBaseUrl(RAW_BASE_URL);
@@ -28,11 +29,29 @@ function joinUrl(base, endpoint) {
   return `${base}/${ep}`;
 }
 
+function normalizeEndpoint(endpoint) {
+  return String(endpoint || "").trim();
+}
+
+function isAuthEndpoint(endpoint) {
+  const ep = normalizeEndpoint(endpoint);
+  // auth 관련 엔드포인트는 refresh 로직을 타지 않게 분리한다
+  return (
+    ep === "/auth/login" ||
+    ep === "auth/login" ||
+    ep === "/auth/signup" ||
+    ep === "auth/signup" ||
+    ep === "/auth/refresh" ||
+    ep === "auth/refresh" ||
+    ep === "/auth/logout" ||
+    ep === "auth/logout"
+  );
+}
+
 async function safeParseResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   if (response.status === 204) return null;
 
-  // JSON 우선 시도(실패해도 텍스트로 폴백)
   if (contentType.includes("application/json")) {
     try {
       return await response.json();
@@ -67,21 +86,27 @@ async function request(endpoint, options = {}) {
     },
   };
 
-  // body가 있을 때만 Content-Type을 JSON으로 강제한다
-  if (config.body && !config.headers["Content-Type"]) {
+  const isFormData =
+    typeof FormData !== "undefined" && config.body instanceof FormData;
+
+  if (config.body && !isFormData && !config.headers["Content-Type"]) {
     config.headers["Content-Type"] = "application/json";
   }
   if (!config.headers["Accept"]) {
     config.headers["Accept"] = "application/json";
   }
 
-  // skipAuth 옵션이 없을 때만 Authorization 헤더 추가
-  if (!options.skipAuth) {
+  // 인증 엔드포인트는 기본적으로 Authorization을 붙이지 않는다
+  const shouldSkipAuth = Boolean(options.skipAuth) || isAuthEndpoint(endpoint);
+
+  if (!shouldSkipAuth) {
     const token = getAccessToken();
     const tokenType = getTokenType();
     if (token) {
       config.headers["Authorization"] = `${tokenType} ${token}`;
     }
+  } else {
+    delete config.headers["Authorization"];
   }
 
   try {
@@ -90,10 +115,8 @@ async function request(endpoint, options = {}) {
 
     if (response.ok) return data;
 
-    const isRefreshEndpoint =
-      String(endpoint) === "/auth/refresh" || String(endpoint) === "auth/refresh";
-
-    if (response.status === 401 && !isRefreshEndpoint) {
+    // auth 엔드포인트는 refresh 재시도 로직을 타지 않는다
+    if (response.status === 401 && !isAuthEndpoint(endpoint)) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         const retryConfig = {
@@ -129,7 +152,11 @@ async function request(endpoint, options = {}) {
       throw new ApiError("인증이 만료되었습니다. 다시 로그인하세요.", 401, data);
     }
 
-    throw new ApiError(data?.message || "요청에 실패했습니다.", response.status, data);
+    throw new ApiError(
+      data?.message || "요청에 실패했습니다.",
+      response.status,
+      data
+    );
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError("네트워크 오류가 발생했습니다.", 0, null);
@@ -160,9 +187,7 @@ async function refreshAccessToken() {
     const response = await fetch(joinUrl(API_BASE_URL, "/auth/refresh"), {
       method: "POST",
       credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: { Accept: "application/json" },
     });
 
     const result = await safeParseResponse(response);
@@ -210,6 +235,15 @@ export const api = {
 
   patch: (endpoint, body, options = {}) =>
     request(endpoint, { method: "PATCH", ...withJsonBody(body, options) }),
+
+  postForm: (endpoint, formData, options = {}) =>
+    request(endpoint, { method: "POST", body: formData, ...options }),
+
+  putForm: (endpoint, formData, options = {}) =>
+    request(endpoint, { method: "PUT", body: formData, ...options }),
+
+  patchForm: (endpoint, formData, options = {}) =>
+    request(endpoint, { method: "PATCH", body: formData, ...options }),
 
   delete: (endpoint, options = {}) =>
     request(endpoint, { ...options, method: "DELETE" }),
