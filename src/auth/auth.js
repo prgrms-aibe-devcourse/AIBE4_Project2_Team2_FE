@@ -59,7 +59,7 @@ export async function login({ username, password }) {
 
         localStorage.setItem(KEY, JSON.stringify(user));
         console.log("✅ 사용자 정보 저장 완료:", user);
-        loadApplicationStatus();
+        await loadApplicationStatus();
         return { ok: true, user };
       } else {
         console.error("❌ 사용자 정보 형식 오류:", userInfo);
@@ -97,33 +97,34 @@ export async function loadApplicationStatus() {
   try {
     const requestInfo = await api.get("/major-requests/me");
 
-    // user 객체가 이미 세션에 생성되어 있다고 가정
-    if (session.user) {
-      if (
-        requestInfo?.success &&
-        Array.isArray(requestInfo.data) &&
-        requestInfo.data.length > 0
-      ) {
-        const latest = requestInfo.data[0];
+    const rawData = localStorage.getItem(KEY);
+    if (!rawData) return { ok: false };
 
-        // user 객체 안에 직접 추가
-        session.user.applicationStatus = latest.applicationStatus ?? "";
-        session.user.requestId = latest.id ?? null;
-        session.user.rejectReason = latest.reason ?? ""; // 반려 시 사유 확인용
-      } else {
-        // 신청 이력이 없는 경우
-        session.user.applicationStatus = "NONE";
-      }
+    const user = JSON.parse(rawData);
+    if (
+      requestInfo?.success &&
+      Array.isArray(requestInfo.data) &&
+      requestInfo.data.length > 0
+    ) {
+      const latest = requestInfo.data[0];
 
-      // 최종적으로 한 번만 저장
-      localStorage.setItem(KEY, JSON.stringify(session));
+      user.applicationStatus = latest.applicationStatus ?? "";
+      user.requestId = latest.id ?? null;
+      user.rejectReason = latest.reason ?? "";
+    } else {
+      user.applicationStatus = "NONE";
+      user.requestId = null;
     }
-  } catch (error) {
-    console.warn("지원 정보 통합 실패:", error);
-  }
-  return { ok: true, session };
-}
 
+    localStorage.setItem(KEY, JSON.stringify(user));
+
+    console.log("✅ 지원 상태 통합 완료:", user);
+    return { ok: true, user };
+  } catch (error) {
+    console.warn("⚠️ 지원 정보 통합 실패:", error);
+    return { ok: false, error };
+  }
+}
 export async function logout() {
   try {
     await api.post("/auth/logout");

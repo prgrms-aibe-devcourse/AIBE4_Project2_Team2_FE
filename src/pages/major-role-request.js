@@ -23,7 +23,7 @@ export async function renderMajorRoleRequest(root) {
   backBtn.addEventListener("click", () => navigate("/"));
 
   try {
-    const token = localStorage.getItem("mm_session");
+    const token = localStorage.getItem("mm_user");
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/login");
@@ -50,7 +50,7 @@ function renderList(container, response) {
   }
 
   // HTML 생성
-  container.innerHTML = response.data
+  container.innerHTML = response
     .map((res) => {
       const statusInfo = getStatusInfo(res.applicationStatus);
       const date = new Date(res.createdAt).toLocaleDateString();

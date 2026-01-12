@@ -7,6 +7,7 @@ const PAGE_SIZE = 8;
 const APPLY_SLOT_INDEX = 2; // 0-based, 3번째 위치
 
 export async function renderHome(root) {
+  console.log("Before API Call:", document.cookie);
   const state = {
     query: "",
     page: 1,
@@ -178,11 +179,6 @@ export async function renderHome(root) {
               ? renderApplyCard()
               : renderProfileCard(card.data)
           );
-          grid.appendChild(
-            card.type === "apply"
-              ? renderApplyCard()
-              : renderProfileCard(card.data)
-          );
         }
       } else {
         if (pageProfiles.length === 0) {
@@ -269,14 +265,14 @@ export async function renderHome(root) {
       const card = document.createElement("article");
       card.className = "card";
 
-        // 1. 로컬 스토리지에서 세션 정보 및 지원 상태 가져오기
+      // 1. 로컬 스토리지에서 세션 정보 및 지원 상태 가져오기
       let applicationStatus = "";
       try {
-        const storedSession = localStorage.getItem("mm_session");
+        const storedSession = localStorage.getItem("mm_user");
         if (storedSession) {
           const session = JSON.parse(storedSession);
           // 로그인 시 저장한 requestInfo 안의 상태값 확인
-          applicationStatus = session.user?.applicationStatus || "";
+          applicationStatus = session.applicationStatus || "";
         }
       } catch (e) {
         console.error("세션 파싱 오류:", e);

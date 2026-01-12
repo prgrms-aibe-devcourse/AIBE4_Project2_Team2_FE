@@ -148,9 +148,8 @@ export function renderApply(root) {
     }
 
     try {
-      const sessionStr = localStorage.getItem("mm_session");
+      const sessionStr = localStorage.getItem("mm_user");
       const session = sessionStr ? JSON.parse(sessionStr) : null;
-      const token = session?.accessToken;
 
       // 백엔드 엔드포인트 URL 조합
       const baseUrl = "http://localhost:8080/api"; // 본인의 백엔드 주소에 맞게 수정
@@ -161,10 +160,6 @@ export function renderApply(root) {
       // 2. api.js 대신 표준 fetch를 직접 사용
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: resubmitId ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // 주의: Content-Type은 절대로 적지 않습니다.
-        },
         body: submissionData,
       });
 
