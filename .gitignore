@@ -23,6 +23,7 @@ build/
 
 # Claude Code
 .claude/
+tmpclaude-*
 
 # Logs
 logs/
