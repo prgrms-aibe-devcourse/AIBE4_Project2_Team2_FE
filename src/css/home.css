@@ -18,7 +18,7 @@
 }
 
 .search-input:focus {
-  border-color: rgba(212, 244, 167, 0.70);
+  border-color: rgba(212, 244, 167, 0.7);
   box-shadow: var(--focus);
 }
 
@@ -27,7 +27,11 @@
   height: 46px;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--pastel-green) 0%, var(--pastel-green-strong) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--pastel-green) 0%,
+    var(--pastel-green-strong) 100%
+  );
   color: var(--dark-text);
   cursor: pointer;
   font-size: 14px;
@@ -38,7 +42,7 @@
 
 .primary-wide:hover {
   transform: translateY(-0.5px);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.1);
   filter: saturate(1.02);
 }
 
@@ -54,14 +58,75 @@
 }
 
 @media (max-width: 980px) {
-  .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
-  .cards-grid { grid-template-columns: 1fr; }
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
 
   .search-input,
   .primary-wide {
     height: 48px;
   }
+}
+
+/* 카드 전체 */
+.card {
+  position: relative; /* 버튼 배치의 기준 */
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+/* 좋아요 버튼 - 오른쪽 상단 고정 */
+.btn-like {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(248, 250, 252, 0.8); /* 살짝 투명하게 */
+  backdrop-filter: blur(4px); /* 배경 흐림 효과로 고급스럽게 */
+  border: 1px solid #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 20px;
+  z-index: 10; /* 카드 내용보다 위에 출력 */
+  cursor: pointer;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.btn-like.active {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+
+.heart-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.like-count {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 활성화 상태 (좋아요 눌렀을 때) */
+.btn-like.active {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48; /* 하트 붉은색 */
+}
+
+.btn-like:hover {
+  transform: scale(1.05);
 }

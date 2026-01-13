@@ -1,23 +1,27 @@
 import { navigate } from "../router.js";
-import { REVIEWS_BY_PROFILE, QNA_BY_PROFILE } from "../data/profileDetailData.js";
+import {
+  REVIEWS_BY_PROFILE,
+  QNA_BY_PROFILE,
+} from "../data/profileDetailData.js";
 import { api } from "../services/api.js";
 
 const PAGE_SIZE = 5;
 
-export async function renderProfileDetail(root, { id }) { // async 추가
+export async function renderProfileDetail(root, { id }) {
+  // async 추가
   const wrap = document.createElement("div");
   wrap.className = "pd-wrap";
 
   let profile = null;
   try {
-      const result = await api.get(`/major-profiles/${id}`);
-      if (result?.success) {
-          profile = result.data;
-      } else {
-          console.error("프로필 조회 실패:", result?.message);
-      }
+    const result = await api.get(`/major-profiles/${id}`);
+    if (result?.success) {
+      profile = result.data;
+    } else {
+      console.error("프로필 조회 실패:", result?.message);
+    }
   } catch (e) {
-      console.error("서버 통신 오류", e);
+    console.error("서버 통신 오류", e);
   }
 
   const state = {
@@ -34,7 +38,7 @@ export async function renderProfileDetail(root, { id }) { // async 추가
       </div>
     `;
     const backBtn = wrap.querySelector(".pd-back");
-    if(backBtn) backBtn.addEventListener("click", () => navigate("/"));
+    if (backBtn) backBtn.addEventListener("click", () => navigate("/"));
     root.appendChild(wrap);
     return;
   }
@@ -48,10 +52,11 @@ export async function renderProfileDetail(root, { id }) { // async 추가
   function renderTopCard(p) {
     const card = document.createElement("section");
     card.className = "card pd-card";
+    card.style.position = "relative"; // 기준점 설정
 
     // 프로필 이미지 처리
-    const avatarStyle = p.profileImageUrl 
-      ? `background-image: url('${p.profileImageUrl}'); background-size: cover;` 
+    const avatarStyle = p.profileImageUrl
+      ? `background-image: url('${p.profileImageUrl}'); background-size: cover;`
       : `background-color: #ddd;`;
 
     const head = document.createElement("div");
@@ -61,7 +66,9 @@ export async function renderProfileDetail(root, { id }) { // async 추가
         <div class="pd-avatar" style="${avatarStyle}" aria-hidden="true"></div>
         <div class="pd-head-text">
           <div class="pd-name">${escapeHtml(p.nickname)}</div>
-          <div class="pd-sub">${escapeHtml(p.university)}<br />${escapeHtml(p.major)}</div>
+          <div class="pd-sub">${escapeHtml(p.university)}<br />${escapeHtml(
+      p.major
+    )}</div>
           <div class="pd-one">${escapeHtml(p.title || "")}</div>
         </div>
       </div>
@@ -70,14 +77,59 @@ export async function renderProfileDetail(root, { id }) { // async 추가
     const cta = document.createElement("div");
     cta.className = "pd-head-right";
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "pd-apply-btn";
-    btn.textContent = "인터뷰 신청하기";
-    // 인터뷰 신청 페이지로 이동 (profileId 전달)
-    btn.addEventListener("click", () => navigate(`/apply?majorId=${p.id}`));
+    // 1. 좋아요 버튼 생성
+    const likeBtn = document.createElement("button");
+    likeBtn.type = "button";
+    likeBtn.className = `pd-like-btn ${p.liked ? "active" : ""}`;
+    likeBtn.innerHTML = `
+      <svg class="heart-icon" viewBox="0 0 24 24">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+      <span class="like-count">${p.likeCount || 0}</span>
+    `;
 
-    cta.appendChild(btn);
+    // 좋아요 클릭 이벤트 핸들러
+    likeBtn.addEventListener("click", async () => {
+      const isNowLiked = !likeBtn.classList.contains("active");
+      const countElement = likeBtn.querySelector(".like-count");
+      let currentCount = parseInt(countElement.textContent) || 0;
+
+      // Optimistic UI 업데이트
+      likeBtn.classList.toggle("active", isNowLiked);
+      countElement.textContent = isNowLiked
+        ? currentCount + 1
+        : Math.max(0, currentCount - 1);
+
+      try {
+        const response = await api.post(`/major-profiles/${id}/likes`);
+        if (response?.success) {
+          const result = response.data;
+          // 서버 데이터로 동기화
+          likeBtn.classList.toggle("active", result.liked);
+          countElement.textContent = result.totalLikes;
+        } else {
+          throw new Error("처리 실패");
+        }
+      } catch (e) {
+        console.error("좋아요 오류:", e);
+        // 롤백
+        likeBtn.classList.toggle("active", !isNowLiked);
+        countElement.textContent = currentCount;
+        alert("좋아요 처리에 실패했습니다.");
+      }
+    });
+
+    const applyBtn = document.createElement("button");
+    applyBtn.type = "button";
+    applyBtn.className = "pd-apply-btn";
+    applyBtn.textContent = "인터뷰 신청하기";
+    applyBtn.addEventListener("click", () =>
+      navigate(`/apply?majorId=${p.id}`)
+    );
+
+    // 우측 영역에 좋아요와 신청 버튼 배치
+    cta.appendChild(likeBtn);
+    cta.appendChild(applyBtn);
 
     const divider = document.createElement("div");
     divider.className = "pd-divider";
@@ -89,23 +141,26 @@ export async function renderProfileDetail(root, { id }) { // async 추가
     const aboutTitle = makeSectionTitle("상세 소개");
     const about = document.createElement("div");
     about.className = "pd-text";
-    about.innerHTML = (p.content || "상세 소개가 없습니다.").replace(/\n/g, "<br>");
+    about.innerHTML = (p.content || "상세 소개가 없습니다.").replace(
+      /\n/g,
+      "<br>"
+    );
 
     // 태그 목록 (활동 내역/상담 분야 대신 태그로 표시)
     const tagsTitle = makeSectionTitle("태그 / 키워드");
     const tagsContainer = document.createElement("div");
     tagsContainer.className = "pd-tags";
-    
+
     if (p.tags && p.tags.length > 0) {
-        p.tags.forEach(tag => {
-            const tagSpan = document.createElement("span");
-            tagSpan.className = "tag";
-            tagSpan.textContent = `#${tag}`;
-            tagsContainer.appendChild(tagSpan);
-        });
+      p.tags.forEach((tag) => {
+        const tagSpan = document.createElement("span");
+        tagSpan.className = "tag";
+        tagSpan.textContent = `#${tag}`;
+        tagsContainer.appendChild(tagSpan);
+      });
     } else {
-        tagsContainer.textContent = "등록된 태그가 없습니다.";
-        tagsContainer.className = "pd-muted";
+      tagsContainer.textContent = "등록된 태그가 없습니다.";
+      tagsContainer.className = "pd-muted";
     }
 
     body.appendChild(aboutTitle);
@@ -141,7 +196,9 @@ export async function renderProfileDetail(root, { id }) { // async 추가
       if (tabBtn) {
         state.tab = tabBtn.getAttribute("data-tab");
         state.page = 1;
-        card.querySelectorAll(".pd-tab").forEach((b) => b.classList.remove("active"));
+        card
+          .querySelectorAll(".pd-tab")
+          .forEach((b) => b.classList.remove("active"));
         tabBtn.classList.add("active");
         renderBottom();
         return;
@@ -173,9 +230,10 @@ export async function renderProfileDetail(root, { id }) { // async 추가
 
     // 리뷰/QnA 데이터는 아직 백엔드 API가 없으므로 더미 데이터 사용
     // 추후 API 연동 시 fetch 로직으로 대체 필요
-    const items = state.tab === "review"
-      ? (REVIEWS_BY_PROFILE[id] || [])
-      : (QNA_BY_PROFILE[id] || []);
+    const items =
+      state.tab === "review"
+        ? REVIEWS_BY_PROFILE[id] || []
+        : QNA_BY_PROFILE[id] || [];
 
     const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
     state.page = Math.min(Math.max(1, state.page), totalPages);
@@ -187,11 +245,14 @@ export async function renderProfileDetail(root, { id }) { // async 추가
     if (pageItems.length === 0) {
       const empty = document.createElement("div");
       empty.className = "empty";
-      empty.textContent = state.tab === "review" ? "후기가 없습니다" : "Q&A가 없습니다";
+      empty.textContent =
+        state.tab === "review" ? "후기가 없습니다" : "Q&A가 없습니다";
       listEl.appendChild(empty);
     } else {
       for (const it of pageItems) {
-        listEl.appendChild(state.tab === "review" ? renderReview(it) : renderQna(it));
+        listEl.appendChild(
+          state.tab === "review" ? renderReview(it) : renderQna(it)
+        );
       }
     }
 
@@ -214,9 +275,10 @@ export async function renderProfileDetail(root, { id }) { // async 추가
   }
 
   function getTotalPages() {
-    const items = state.tab === "review"
-      ? (REVIEWS_BY_PROFILE[id] || [])
-      : (QNA_BY_PROFILE[id] || []);
+    const items =
+      state.tab === "review"
+        ? REVIEWS_BY_PROFILE[id] || []
+        : QNA_BY_PROFILE[id] || [];
     return Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   }
 
@@ -250,7 +312,9 @@ export async function renderProfileDetail(root, { id }) { // async 추가
         </div>
         <div class="pd-date">${escapeHtml(q.date)}</div>
       </div>
-      <div class="pd-item-content">${escapeHtml(q.answer || "답변 대기 중")}</div>
+      <div class="pd-item-content">${escapeHtml(
+        q.answer || "답변 대기 중"
+      )}</div>
     `;
 
     return row;

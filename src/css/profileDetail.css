@@ -27,7 +27,11 @@
   width: 72px;
   height: 72px;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--pastel-green-soft) 0%, var(--pastel-mint) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--pastel-green-soft) 0%,
+    var(--pastel-mint) 100%
+  );
   border: 1px solid rgba(212, 244, 167, 0.45);
   flex: 0 0 auto;
 }
@@ -58,8 +62,9 @@
 
 .pd-head-right {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
 }
 
 .pd-apply-btn {
@@ -80,6 +85,40 @@
   border-color: rgba(212, 244, 167, 0.55);
   background: rgba(212, 244, 167, 0.18);
   transform: translateY(-0.5px);
+}
+
+.pd-like-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.pd-like-btn .heart-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.pd-like-btn.active {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+
+.pd-like-btn:hover {
+  background: #f8f9fa;
+}
+
+.pd-like-btn.active:hover {
+  background: #ffe4e6;
 }
 
 .pd-divider {

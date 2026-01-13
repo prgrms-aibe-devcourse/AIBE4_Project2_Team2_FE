@@ -8,37 +8,53 @@ const APPLY_SLOT_INDEX = 2; // 0-based, 3번째 위치
 
 export async function renderHome(root) {
   console.log("Before API Call:", document.cookie);
+
+  // 상태 관리: totalPages 추가
   const state = {
     query: "",
-    page: 1,
+    page: 1, // UI상 1페이지 (API 요청 시 -1 필요)
+    totalPages: 1,
     profiles: [],
+    isLoading: false,
   };
 
-  const { wrap, render } = buildHome();
+  const { wrap, render, updatePagination } = buildHome();
   root.appendChild(wrap);
 
-  // home.js 내의 전공자 목록 조회 부분
-  try {
-    // api.get은 이미 JSON 파싱된 결과를 반환하므로 await response.json()이 필요 없음
-    const result = await api.get("/major-profiles");
+  // 초기 데이터 로드
+  await loadProfiles();
 
-    // 프로젝트 공통 응답 구조인 success 필드로 확인
-    if (result?.success) {
-      // 백엔드 ApiResponse<T>의 data 필드에 접근
-      state.profiles = result.data;
-      console.log("목록 조회 성공:", state.profiles);
-    } else {
-      // 백엔드에서 보낸 에러 메시지가 있다면 출력
-      console.error(
-        "전공자 목록 조회 실패:",
-        result?.message || "알 수 없는 오류"
+  async function loadProfiles() {
+    if (state.isLoading) return;
+    state.isLoading = true;
+
+    try {
+      // 검색 기능이 백엔드에 구현되면 &query=${state.query} 등을 추가해야 함
+      const result = await api.get(
+        `/major-profiles?page=${state.page - 1}&size=${PAGE_SIZE}`
       );
-    }
-  } catch (e) {
-    console.error("서버 통신 오류 (네트워크 에러 등):", e);
-  }
 
-  render();
+      if (result?.success) {
+        const pageData = result.data; // Page<MajorCardResponse>
+        state.profiles = pageData.content; // 현재 페이지의 데이터 목록
+        state.totalPages = pageData.totalPages; // 전체 페이지 수
+
+        console.log(`페이지 ${state.page} 로드 성공:`, state.profiles);
+
+        render();
+        updatePagination();
+      } else {
+        console.error(
+          "전공자 목록 조회 실패:",
+          result?.message || "알 수 없는 오류"
+        );
+      }
+    } catch (e) {
+      console.error("서버 통신 오류:", e);
+    } finally {
+      state.isLoading = false;
+    }
+  }
 
   function buildHome() {
     const wrap = document.createElement("div");
@@ -67,12 +83,15 @@ export async function renderHome(root) {
 
     const input = searchRow.querySelector("#searchInput");
 
-    input.addEventListener("input", (e) => {
-      state.query = e.target.value;
-      state.page = 1;
-      render();
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        state.query = e.target.value;
+        state.page = 1;
+        loadProfiles(); // 검색어 변경 시 1페이지부터 다시 로드
+      }
     });
 
+    // 태그 클릭
     wrap.addEventListener("click", (e) => {
       const tagBtn = e.target.closest("[data-tag]");
       if (!tagBtn) return;
@@ -80,94 +99,47 @@ export async function renderHome(root) {
       state.query = tag;
       state.page = 1;
       input.value = tag;
-      render();
+      loadProfiles();
     });
 
+    // 페이지 번호 클릭
     wrap.addEventListener("click", (e) => {
       const pageBtn = e.target.closest("[data-page]");
       if (!pageBtn) return;
       const page = Number(pageBtn.getAttribute("data-page"));
-      if (!Number.isFinite(page)) return;
+      if (!Number.isFinite(page) || page === state.page) return;
+
       state.page = page;
-      render();
+      loadProfiles(); // 페이지 변경 시 데이터 로드
     });
 
+    // 다음 페이지 클릭
     wrap.addEventListener("click", (e) => {
       const nextBtn = e.target.closest("[data-next]");
       if (!nextBtn) return;
-      state.page = Math.min(state.page + 1, getTotalPages());
-      render();
+
+      if (state.page < state.totalPages) {
+        state.page += 1;
+        loadProfiles();
+      }
     });
 
-    return { wrap, render };
+    return { wrap, render, updatePagination };
 
-    function normalize(s) {
-      return String(s || "")
-        .trim()
-        .toLowerCase();
-    }
-
-    function matches(profile, q) {
-      const qq = normalize(q);
-      if (!qq) return true;
-
-      const hay = [
-        profile.name,
-        profile.school,
-        profile.major,
-        profile.intro,
-        ...(profile.tags || []),
-      ]
-        .map(normalize)
-        .join(" ");
-
-      return hay.includes(qq);
-    }
-
-    function getFilteredProfiles() {
-      const arr = Array.isArray(state.profiles) ? state.profiles : [];
-      return arr.filter((p) => matches(p, state.query));
-    }
-
-    function getTotalPages() {
-      const n = getFilteredProfiles().length; // 프로필 개수만 기준
-      const firstCap = PAGE_SIZE - 1; // 1페이지는 지원하기 카드가 1칸 차지
-      if (n <= firstCap) return 1;
-      return 1 + Math.ceil((n - firstCap) / PAGE_SIZE);
-    }
-
+    // 렌더링 함수 (데이터 표시)
     function render() {
-      const profiles = getFilteredProfiles();
-
-      const totalPages = getTotalPages();
-      const safePage = Math.min(Math.max(1, state.page), totalPages);
-      state.page = safePage;
-
-      let pageProfiles = [];
-
-      if (safePage === 1) {
-        pageProfiles = profiles.slice(0, PAGE_SIZE - 1);
-      } else {
-        const offset = PAGE_SIZE - 1 + (safePage - 2) * PAGE_SIZE;
-        pageProfiles = profiles.slice(offset, offset + PAGE_SIZE);
-      }
-
+      const pageProfiles = state.profiles; // 이미 현재 페이지 데이터임
       grid.innerHTML = "";
 
-      if (safePage === 1) {
+      // 1페이지일 때만 '지원하기' 카드 삽입
+      if (state.page === 1) {
         const insertAt = Math.min(APPLY_SLOT_INDEX, pageProfiles.length);
 
         const combined = [
           ...pageProfiles
             .slice(0, insertAt)
             .map((p) => ({ type: "profile", data: p })),
-          ...pageProfiles
-            .slice(0, insertAt)
-            .map((p) => ({ type: "profile", data: p })),
           { type: "apply" },
-          ...pageProfiles
-            .slice(insertAt)
-            .map((p) => ({ type: "profile", data: p })),
           ...pageProfiles
             .slice(insertAt)
             .map((p) => ({ type: "profile", data: p })),
@@ -182,60 +154,118 @@ export async function renderHome(root) {
         }
       } else {
         if (pageProfiles.length === 0) {
-          grid.innerHTML = `<div class="empty">검색 결과가 없습니다.</div>`;
+          grid.innerHTML = `<div class="empty">등록된 프로필이 없습니다.</div>`;
         } else {
           for (const p of pageProfiles) {
             grid.appendChild(renderProfileCard(p));
           }
         }
       }
+    }
 
+    // 페이지네이션 버튼 렌더링
+    function updatePagination() {
       pager.innerHTML = "";
-      for (let i = 1; i <= totalPages; i += 1) {
+      const totalPages = state.totalPages;
+
+      // 페이지 버튼 생성
+      // (페이지가 많을 경우 '...' 처리 로직이 필요할 수 있음. 여기선 단순 나열)
+      let startPage = Math.max(1, state.page - 4);
+      let endPage = Math.min(totalPages, startPage + 9);
+
+      if (endPage - startPage < 9) {
+        startPage = Math.max(1, endPage - 9);
+      }
+
+      for (let i = startPage; i <= endPage; i += 1) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = `page-btn ${i === safePage ? "active" : ""}`;
+        btn.className = `page-btn ${i === state.page ? "active" : ""}`;
         btn.textContent = String(i);
         btn.setAttribute("data-page", String(i));
         pager.appendChild(btn);
       }
 
-      const next = document.createElement("button");
-      next.type = "button";
-      next.className = "page-btn arrow";
-      next.textContent = "→";
-      next.setAttribute("data-next", "1");
-      pager.appendChild(next);
+      // 다음 페이지 버튼
+      if (state.page < totalPages) {
+        const next = document.createElement("button");
+        next.type = "button";
+        next.className = "page-btn arrow";
+        next.textContent = "→";
+        next.setAttribute("data-next", "1");
+        pager.appendChild(next);
+      }
     }
 
     function renderProfileCard(p) {
       const card = document.createElement("article");
       card.className = "card";
+      card.style.position = "relative";
       card.style.cursor = "pointer";
 
-      const pid = p.id; // ?? p.profileId ?? p.userId ?? p.name;
-
-      card.addEventListener("click", (e) => {
-        if (e.target.closest("[data-tag]")) return;
-        if (pid == null) return;
-        // navigate(`/profile/${encodeURIComponent(String(pid))}`);
-        navigate(`/major-card-detail/${encodeURIComponent(String(pid))}`);
+      // 카드 클릭 시 상세 페이지 이동
+      card.addEventListener("click", () => {
+        navigate(`/major-card-detail/${p.id}`);
       });
 
-      // 프로필 이미지 처리
+      const pid = p.id;
+
+      // 1. 좋아요 버튼 생성
+      const likeBtn = document.createElement("button");
+      likeBtn.type = "button";
+      likeBtn.className = `btn-like ${p.liked ? "active" : ""}`;
+
+      if (p.liked) likeBtn.classList.add("active");
+
+      likeBtn.innerHTML = `
+        <svg class="heart-icon" viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+        <span class="like-count">${p.likeCount || 0}</span>
+      `;
+
+      // [좋아요 토글 핸들러]
+      likeBtn.addEventListener("click", async (e) => {
+        e.stopPropagation(); // 카드 클릭 방지
+
+        // UI 즉시 업데이트 (Optimistic Update)
+        const isNowLiked = !likeBtn.classList.contains("active");
+        const countElement = likeBtn.querySelector(".like-count");
+        let currentCount = parseInt(countElement.textContent);
+
+        likeBtn.classList.toggle("active", isNowLiked);
+        countElement.textContent = isNowLiked
+          ? currentCount + 1
+          : Math.max(0, currentCount - 1);
+        try {
+          const response = await api.post(`/major-profiles/${pid}/likes`);
+
+          if (!response.success) throw new Error("좋아요 처리 실패");
+
+          likeBtn.classList.toggle("active", response.data.liked);
+          countElement.textContent = response.data.totalLikes;
+        } catch (error) {
+          console.error(error);
+          // 실패 시 원래대로 롤백
+          likeBtn.classList.toggle("active", !isNowLiked);
+          countElement.textContent = currentCount;
+          alert("좋아요 처리에 실패했습니다.");
+        }
+      });
+
+      card.appendChild(likeBtn);
+
+      // 2. 기존 카드 내용 (Top, Body, Tags)
       const avatarStyle = p.profileImageUrl
         ? `background-image: url('${p.profileImageUrl}'); background-size: cover;`
-        : `background-color: #ddd;`; // 기본 이미지
+        : `background-color: #f1f5f9;`;
 
       const top = document.createElement("div");
       top.className = "card-top";
       top.innerHTML = `
-        <div class="card-avatar" aria-hidden="true"></div>
-        <h3 class="card-title">${escapeHtml(p.name)}</h3>
-        <p class="card-sub">${escapeHtml(p.school)}<br />${escapeHtml(
-        p.major
-      )}</p>
-        <p class="card-sub">${escapeHtml(p.school)}<br />${escapeHtml(
+        <div class="card-avatar" style="${avatarStyle}" aria-hidden="true"></div>
+        <h3 class="card-title">${escapeHtml(p.nickname || p.name)}</h3>
+        <p class="card-sub">${escapeHtml(p.university)}<br />${escapeHtml(
         p.major
       )}</p>
       `;
@@ -252,7 +282,7 @@ export async function renderHome(root) {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "tag";
-        b.textContent = t;
+        b.textContent = t.startsWith("#") ? t : `#${t}`;
         b.setAttribute("data-tag", t);
         tags.appendChild(b);
       }
@@ -271,7 +301,6 @@ export async function renderHome(root) {
         const storedSession = localStorage.getItem("mm_user");
         if (storedSession) {
           const session = JSON.parse(storedSession);
-          // 로그인 시 저장한 requestInfo 안의 상태값 확인
           applicationStatus = session.applicationStatus || "";
         }
       } catch (e) {
@@ -281,20 +310,18 @@ export async function renderHome(root) {
       const box = document.createElement("div");
       box.className = "card-cta";
 
-      // 2. 상태에 따른 UI 구성 설정 변수
       let title = "전공자 지원하기";
       let desc = "당신의 전공 경험을 공유하고<br />후배들에게 도움을 주세요!";
       let btnText = "지원하기";
       let targetPath = "/apply";
       let isBtnDisabled = false;
 
-      // 3. 상태별 분기 처리 (백엔드에서 보내주는 문자열에 맞게 수정하세요)
       switch (applicationStatus) {
         case "PENDING":
           title = "심사 진행 중";
           desc = "전공자 인증 심사가 진행 중입니다.<br />조금만 기다려 주세요!";
           btnText = "심사 현황 보기";
-          targetPath = "/major-role-request"; // 또는 마이페이지
+          targetPath = "/major-role-request";
           break;
 
         case "REJECTED":
@@ -302,7 +329,7 @@ export async function renderHome(root) {
           desc =
             "인증 요청이 반려되었습니다.<br />사유를 확인하고 다시 시도해 주세요.";
           btnText = "재신청 하기";
-          targetPath = "/major-role-request"; // 재신청 페이지 (반려 사유 등을 세션스토리지에 담아 이동)
+          targetPath = "/major-role-request";
           break;
 
         case "ACCEPTED":
@@ -310,18 +337,17 @@ export async function renderHome(root) {
           desc =
             "전공자 인증이 완료되었습니다!<br />당신의 지식을 공유해 보세요.";
           btnText = "내 프로필 보기";
-          targetPath = "/my-major-profile"; // 본인 프로필 상세 페이지
+          targetPath = "/my-major-profile";
           break;
 
         default:
-          // 지원 이력이 없는 경우 기본값 유지
           break;
       }
 
       box.innerHTML = `
-    <h3>${title}</h3>
-    <p>${desc}</p>
-  `;
+        <h3>${title}</h3>
+        <p>${desc}</p>
+      `;
 
       const btn = document.createElement("button");
       btn.type = "button";
