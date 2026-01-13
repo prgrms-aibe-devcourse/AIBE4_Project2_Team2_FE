@@ -32,3 +32,6 @@ npm-debug.log*
 
 # OS
 Thumbs.db
+
+#요청사항
+BACKEND_SEARCH_API.md
