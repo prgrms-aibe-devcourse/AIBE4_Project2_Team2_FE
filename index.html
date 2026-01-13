@@ -1,9 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MajorMate</title>
+
+    <!-- SEO & OG Meta -->
+    <meta name="description" content="MajorMate | 당신의 진로 길잡이" />
+    <meta property="og:title" content="MajorMate | 당신의 진로 길잡이" />
+    <meta property="og:description" content="MajorMate | 당신의 진로 길잡이" />
+    <meta property="og:image" content="img/logo.png" />
+    <meta property="og:image:width" content="1100" />
+    <meta property="og:image:height" content="550" />
+    <meta property="og:image:type" content="image/png" />
+
+    <!-- favicon -->
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="img/favicon/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="img/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="img/favicon/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="img/favicon/android-chrome-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="img/favicon/android-chrome-512x512.png"
+    />
+    <link rel="manifest" href="img/favicon/site.webmanifest" />
 
     <link rel="stylesheet" href="src/css/common.css" />
   </head>
@@ -20,12 +61,24 @@
         <div class="header-right" id="headerRight">
           <div class="user-links" id="userLinks">
             <span class="user-nickname" id="deskNickname">사용자</span>
-            <button class="user-link as-button" type="button" id="btnMyPage">마이페이지</button>
-            <button class="user-link as-button" type="button" id="btnManager">관리자</button>
-            <button class="user-link as-button" type="button" id="btnLogout">로그아웃</button>
+            <button class="user-link as-button" type="button" id="btnMyPage">
+              마이페이지
+            </button>
+            <button class="user-link as-button" type="button" id="btnManager">
+              관리자
+            </button>
+            <button class="user-link as-button" type="button" id="btnLogout">
+              로그아웃
+            </button>
           </div>
 
-          <button class="avatar-btn avatar-btn--disabled" type="button" id="avatarBtn" aria-label="프로필 메뉴" disabled>
+          <button
+            class="avatar-btn avatar-btn--disabled"
+            type="button"
+            id="avatarBtn"
+            aria-label="프로필 메뉴"
+            disabled
+          >
             <span class="avatar" aria-hidden="true"></span>
           </button>
 
@@ -33,9 +86,15 @@
             <div class="user-menu-head">
               <div class="user-menu-nick" id="menuNickname">사용자</div>
             </div>
-            <button class="user-menu-item" type="button" id="menuMyPage">마이페이지</button>
-            <button class="user-menu-item" type="button" id="menuManager">관리자</button>
-            <button class="user-menu-item" type="button" id="menuLogout">로그아웃</button>
+            <button class="user-menu-item" type="button" id="menuMyPage">
+              마이페이지
+            </button>
+            <button class="user-menu-item" type="button" id="menuManager">
+              관리자
+            </button>
+            <button class="user-menu-item" type="button" id="menuLogout">
+              로그아웃
+            </button>
           </div>
         </div>
       </div>
@@ -45,6 +104,28 @@
       <div class="container" id="view"></div>
     </main>
 
+    <div class="mm-overlay" id="mmOverlay" aria-hidden="true" data-mode="">
+      <div class="mm-overlay__box" role="status" aria-live="polite">
+        <!-- 체크 아이콘 -->
+        <svg
+          class="mm-overlay__icon mm-overlay__icon--check"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            d="M20 6L9 17l-5-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+
+        <!-- 로딩 스피너 -->
+        <div class="mm-overlay__spinner" aria-hidden="true"></div>
+      </div>
+    </div>
     <script type="module" src="src/main.js"></script>
   </body>
 </html>

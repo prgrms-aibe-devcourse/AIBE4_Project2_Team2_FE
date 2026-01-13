@@ -21,7 +21,17 @@ export async function renderOAuthCallback(root) {
   const error = params.get("error");
 
   if (error) {
-    alert("소셜 로그인 실패: " + error);
+    // 에러 타입별 메시지 매핑
+    const errorMessages = {
+      email_already_registered: "이미 가입된 이메일입니다. 로컬 계정으로 로그인해주세요.",
+      email_not_found: "이메일 정보를 가져올 수 없습니다.",
+      unsupported_provider: "지원하지 않는 소셜 로그인입니다.",
+      username_generation_failed: "계정 생성 중 오류가 발생했습니다.",
+      nickname_generation_failed: "닉네임 생성 중 오류가 발생했습니다.",
+    };
+
+    const errorMessage = errorMessages[error] || "로그인에 실패했습니다.";
+    alert(errorMessage);
     window.location.replace("/login");
     return;
   }
