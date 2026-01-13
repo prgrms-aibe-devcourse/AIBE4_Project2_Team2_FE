@@ -29,10 +29,26 @@ export async function renderHome(root) {
     state.isLoading = true;
 
     try {
-      // 검색 기능이 백엔드에 구현되면 &query=${state.query} 등을 추가해야 함
-      const result = await api.get(
-        `/major-profiles?page=${state.page - 1}&size=${PAGE_SIZE}`
-      );
+      // 검색어 처리
+      let url = `/major-profiles?page=${state.page - 1}&size=${PAGE_SIZE}`;
+
+      if (state.query && state.query.trim()) {
+        const query = state.query.trim();
+
+        // #으로 시작하면 태그 검색, 그 외에는 통합 검색
+        if (query.startsWith('#')) {
+          // 태그 검색: # 제거 후 전달
+          const tag = query.substring(1).trim();
+          if (tag) {
+            url += `&searchType=tag&keyword=${encodeURIComponent(tag)}`;
+          }
+        } else {
+          // 닉네임/학교/학과 통합 검색
+          url += `&searchType=all&keyword=${encodeURIComponent(query)}`;
+        }
+      }
+
+      const result = await api.get(url);
 
       if (result?.success) {
         const pageData = result.data; // Page<MajorCardResponse>
@@ -61,7 +77,10 @@ export async function renderHome(root) {
 
     const searchRow = document.createElement("div");
     searchRow.className = "search-row";
-    searchRow.innerHTML = `<input class="search-input" id="searchInput" placeholder="검색어를 입력하세요." />`;
+    searchRow.innerHTML = `
+      <input class="search-input" id="searchInput" placeholder="닉네임, 학교, 학과 또는 #태그 검색" />
+      <button class="search-btn" id="searchBtn" type="button">검색</button>
+    `;
     wrap.appendChild(searchRow);
 
     const recommendBtn = document.createElement("button");
@@ -82,23 +101,35 @@ export async function renderHome(root) {
     wrap.appendChild(pager);
 
     const input = searchRow.querySelector("#searchInput");
+    const searchBtn = searchRow.querySelector("#searchBtn");
 
+    // 검색 실행 함수
+    const performSearch = () => {
+      state.query = input.value;
+      state.page = 1;
+      loadProfiles(); // 검색어 변경 시 1페이지부터 다시 로드
+    };
+
+    // Enter 키로 검색
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        state.query = e.target.value;
-        state.page = 1;
-        loadProfiles(); // 검색어 변경 시 1페이지부터 다시 로드
+        performSearch();
       }
     });
+
+    // 검색 버튼 클릭
+    searchBtn.addEventListener("click", performSearch);
 
     // 태그 클릭
     wrap.addEventListener("click", (e) => {
       const tagBtn = e.target.closest("[data-tag]");
       if (!tagBtn) return;
       const tag = tagBtn.getAttribute("data-tag") || "";
-      state.query = tag;
+      // 태그 검색은 #을 붙여서 검색
+      const searchQuery = tag.startsWith('#') ? tag : `#${tag}`;
+      state.query = searchQuery;
       state.page = 1;
-      input.value = tag;
+      input.value = searchQuery;
       loadProfiles();
     });
 
