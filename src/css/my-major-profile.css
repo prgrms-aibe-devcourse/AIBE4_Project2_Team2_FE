@@ -1,245 +1,218 @@
-/* 전체 레이아웃 */
+/* 공통 레이아웃 */
 .my-profile-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  width: 100%;
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+  font-family: "Pretendard", sans-serif;
 }
 
-.page-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--dark-text);
-  margin-bottom: 10px;
+/* 1. 상단 헤더 섹션 */
+.profile-page-header {
+  margin-bottom: 30px;
 }
 
-/* 1. 조회 모드 (Profile Card) */
-.profile-card {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-}
-
-.profile-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.title-section {
   margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--line);
+}
+.page-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 5px;
+}
+.page-subtitle {
+  color: #64748b;
+  font-size: 15px;
 }
 
-.header-left {
+.user-info-card {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(135deg, #f8faff 0%, #f1f5ff 100%);
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
 }
 
-.university-badge {
-  display: inline-block;
-  background: rgba(212, 244, 167, 0.3);
-  color: var(--pastel-green-strong);
-  padding: 4px 10px;
+.main-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  
+  /* 배경 이미지 관련 설정 */
+  background-size: cover;      /* 이미지가 요소를 가득 채우도록 */
+  background-position: center; /* 이미지의 중심이 보이도록 */
+  background-repeat: no-repeat;
+  background-color: #e2e8f0;   /* 이미지가 없을 때 배경색 */
+
+  /* 내부 아이콘(👤) 중앙 정렬 설정 */
+  display: flex;
+  align-items: center;         /* 세로 중앙 */
+  justify-content: center;     /* 가로 중앙 */
+  
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;            /* 원형 밖으로 나가는 것 방지 */
+}
+
+/* 아이콘 크기 조정 */
+.avatar-placeholder {
+  font-size: 40px;             /* 아이콘 크기 */
+  line-height: 1;              /* 텍스트 높이로 인한 치우침 방지 */
+  display: block;              /* 정렬을 위해 블록화 */
+}
+
+.user-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.user-nickname {
+  font-size: 14px;
+  color: #64748b;
+  margin-left: 6px;
+}
+.info-badges {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+.info-value {
+  padding: 4px 12px;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 700;
-  width: fit-content;
+  font-weight: 600;
+}
+.badge-university {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.badge-major {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.profile-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--dark-text);
-  margin: 0;
+/* 2. 카드 공통 스타일 (조회/편집 공통) */
+.profile-card {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
 }
 
-.header-right {
+/* 3. 조회 모드 전용 */
+.card-status-layer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+.status-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* 토글 스위치 */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-}
-
-.switch input { opacity: 0; width: 0; height: 0; }
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-input:checked + .slider {
-  background-color: var(--pastel-green);
-}
-
-input:checked + .slider:before {
-  transform: translateX(20px);
-}
-
-.status-text {
   font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.status-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.status-dot.inactive {
+  background: #cbd5e1;
+}
+
+.card-main-content {
+  padding: 40px 30px;
+  text-align: center;
+}
+.profile-display-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.profile-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #475569;
+  text-align: left;
+}
+
+/* 4. 편집 모드 전용 */
+.card-header-layer {
+  padding: 24px 30px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.edit-title {
+  font-size: 18px;
   font-weight: 700;
-  color: var(--muted);
-  min-width: 45px;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+.edit-description {
+  font-size: 13px;
+  color: #64748b;
 }
 
-.profile-content {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text);
-  margin-bottom: 20px;
-  white-space: pre-wrap; /* 줄바꿈 유지 */
+.edit-form-content {
+  padding: 30px;
 }
-
-.profile-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.form-group {
   margin-bottom: 24px;
 }
-
-.tag {
-  background: #f1f3f5;
-  color: #495057;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-/* 버튼 스타일 */
-.btn-edit, .btn-submit {
-  padding: 10px 20px;
-  background: var(--pastel-green);
-  color: var(--dark-text);
-  border: 1px solid rgba(212, 244, 167, 0.6);
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-edit:hover, .btn-submit:hover {
-  background: var(--pastel-green-strong);
-  transform: translateY(-1px);
-}
-
-.btn-back, .btn-cancel {
-  padding: 10px 20px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-back:hover, .btn-cancel:hover {
-  background: #f8f9fa;
-  border-color: #ced4da;
-}
-
-/* 2. 편집 모드 (Edit Form) */
-.edit-container {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: var(--dark-text);
-  border-bottom: 2px solid var(--pastel-green);
-  padding-bottom: 10px;
-  display: inline-block;
-}
-
-.edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .form-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--dark-text);
-}
-
-.form-input, .form-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  display: block;
   font-size: 14px;
-  background: #fff;
-  transition: border-color 0.2s;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
 }
 
-.form-input:focus, .form-textarea:focus {
+.input-wrapper {
+  position: relative;
+}
+.form-input,
+.form-textarea {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 15px;
+  transition: all 0.2s;
+  background: #fcfcfd;
+}
+.form-input:focus,
+.form-textarea:focus {
   outline: none;
-  border-color: var(--pastel-green);
-  box-shadow: 0 0 0 3px rgba(212, 244, 167, 0.2);
+  border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
-.tag-input-box {
+/* 태그 스타일 */
+.tag-input-container {
   display: flex;
   gap: 8px;
+  margin-bottom: 12px;
 }
-
-.btn-add {
-  padding: 0 16px;
-  background: var(--dark-text);
-  color: white;
+.btn-add-tag {
+  background: #1e293b;
+  color: #fff;
   border: none;
-  border-radius: 10px;
+  padding: 0 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
 }
@@ -248,47 +221,57 @@ input:checked + .slider:before {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
 }
-
-.tag-item {
-  background: #e9ecef;
-  padding: 6px 12px;
-  border-radius: 20px;
+.edit-tag-item,
+.display-tag {
+  background: #f1f5ff;
+  color: #4f46e5;
+  padding: 6px 14px;
+  border-radius: 99px;
   font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
 }
-
-.btn-rm {
+.btn-tag-remove {
   background: none;
   border: none;
-  color: #868e96;
+  color: #94a3b8;
   cursor: pointer;
   font-size: 16px;
-  line-height: 1;
-  padding: 0;
 }
 
-.btn-rm:hover {
-  color: #fa5252;
-}
-
-.btn-row {
+/* 버튼 액션 */
+.edit-actions,
+.action-buttons {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 20px;
 }
-
-/* 로딩 및 에러 */
-.loading, .error {
-  text-align: center;
-  padding: 40px;
-  color: var(--muted);
-  font-size: 14px;
+.btn-save,
+.btn-primary-outline {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-
-.error {
-  color: #fa5252;
+.btn-save {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+}
+.btn-save:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+}
+.btn-cancel-edit,
+.btn-ghost {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-weight: 600;
 }

@@ -219,7 +219,7 @@ export async function renderHome(root) {
         if (e.target.closest("[data-tag]")) return;
         if (pid == null) return;
         // navigate(`/profile/${encodeURIComponent(String(pid))}`);
-        navigate(`/major-profile/${encodeURIComponent(String(pid))}`);
+        navigate(`/major-card-detail/${encodeURIComponent(String(pid))}`);
       });
 
       // 프로필 이미지 처리
@@ -305,12 +305,12 @@ export async function renderHome(root) {
           targetPath = "/major-role-request"; // 재신청 페이지 (반려 사유 등을 세션스토리지에 담아 이동)
           break;
 
-        case "APPROVED":
+        case "ACCEPTED":
           title = "인증 완료";
           desc =
             "전공자 인증이 완료되었습니다!<br />당신의 지식을 공유해 보세요.";
           btnText = "내 프로필 보기";
-          targetPath = "/major-role-request"; // 본인 프로필 상세 페이지
+          targetPath = "/my-major-profile"; // 본인 프로필 상세 페이지
           break;
 
         default:

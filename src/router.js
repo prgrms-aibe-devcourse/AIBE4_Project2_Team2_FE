@@ -33,7 +33,7 @@ const routes = {
   "/major-role-request": renderMajorRoleRequest,
   "/major-role-request-detail/:id": renderMajorRequestDetail,
   "/my-major-profile": renderMyMajorProfile,
-  "/majorCardDetail/:id": renderProfileDetail,
+  "/major-card-detail/:id": renderProfileDetail,
   "/recommend": renderRecommend,
   "/login": renderLogin,
   "/signup": renderSignup,
@@ -86,12 +86,17 @@ function route() {
     return;
   }
 
-  // 동적 라우트: /profile/:id
   if (path.startsWith("/major-role-request-detail/")) {
     const id = decodeURIComponent(
       path.slice("/major-role-request-detail/".length)
     );
     renderMajorRequestDetail(view, { id });
+    return;
+  }
+
+  if (path.startsWith("/major-card-detail/")) {
+    const id = decodeURIComponent(path.slice("/major-card-detail/".length));
+    renderProfileDetail(view, { id });
     return;
   }
 
@@ -151,7 +156,8 @@ function getCssFilesForPath(path) {
   if (path === "/mypage") return ["src/css/mypage.css"];
   if (path === "/apply") return ["src/css/apply.css"];
   if (path === "/recommend") return ["src/css/recommend.css"];
-  if (path.startsWith("/profile/")) return ["src/css/profileDetail.css"];
+  if (path.startsWith("/major-card-detail/"))
+    return ["src/css/profileDetail.css"];
   if (path === "/manager") return ["src/css/manager.css"];
   if (path === "/major-role-request") return ["src/css/major-role-request.css"];
   if (path.startsWith("/major-role-request-detail/"))

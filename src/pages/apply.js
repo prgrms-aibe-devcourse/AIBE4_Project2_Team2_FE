@@ -148,9 +148,6 @@ export function renderApply(root) {
     }
 
     try {
-      const sessionStr = localStorage.getItem("mm_user");
-      const session = sessionStr ? JSON.parse(sessionStr) : null;
-
       // 백엔드 엔드포인트 URL 조합
       const baseUrl = "http://localhost:8080/api"; // 본인의 백엔드 주소에 맞게 수정
       let endpoint = resubmitId
@@ -161,6 +158,7 @@ export function renderApply(root) {
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: resubmitId ? "PUT" : "POST",
         body: submissionData,
+        credentials: "include",
       });
 
       // 3. 응답 처리
@@ -173,6 +171,9 @@ export function renderApply(root) {
 
       if (result.success) {
         alert("전공자 인증 요청이 완료되었습니다.");
+        if (session.user.applicationStatus == "NONE")
+          session.user.applicationStatus = "PENDING";
+        localStorage.setItem("mm_user", JSON.stringify(session.user));
         navigate("/");
       } else {
         alert("요청 실패: " + (result.message || "다시 시도해주세요."));

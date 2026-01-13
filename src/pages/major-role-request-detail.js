@@ -25,7 +25,7 @@ export async function renderMajorRequestDetail(root, params) {
   backBtn.addEventListener("click", () => navigate("/major-role-request")); // 목록 페이지로 이동
 
   try {
-    const token = localStorage.getItem("mm_session");
+    const token = localStorage.getItem("mm_user");
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/login");

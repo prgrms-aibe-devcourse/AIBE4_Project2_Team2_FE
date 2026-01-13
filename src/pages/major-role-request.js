@@ -50,7 +50,7 @@ function renderList(container, response) {
   }
 
   // HTML 생성
-  container.innerHTML = response
+  container.innerHTML = response.data
     .map((res) => {
       const statusInfo = getStatusInfo(res.applicationStatus);
       const date = new Date(res.createdAt).toLocaleDateString();
@@ -119,11 +119,11 @@ function renderList(container, response) {
       e.stopPropagation(); // 카드 클릭 이벤트 전파 방지
 
       const requestId = e.target.dataset.id;
-      const targetRequest = requests.find((r) => r.id == requestId);
+      const targetRequest = response.find((r) => r.id == requestId);
 
       if (targetRequest) {
         sessionStorage.setItem("resubmitData", JSON.stringify(targetRequest));
-        navigate("/apply-major");
+        navigate("/apply");
       }
     });
   });
