@@ -60,7 +60,7 @@ export function closeReviewDetailModal() {
 }
 
 function renderDetail(item) {
-  const major = item?.major || {};
+  const major = item?.peer || {};
   const review = item?.review || {};
   const interview = item?.interview || null;
 

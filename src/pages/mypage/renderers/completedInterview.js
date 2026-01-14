@@ -2,7 +2,7 @@
 import { escapeHtml, escapeAttr } from "../utils/dom.js";
 
 export function renderCompletedInterviewItem(item) {
-  const major = item?.major || {};
+  const major = item?.peer || {};
   const interview = item?.interview || {};
   const interviewId = item?.interviewId;
 

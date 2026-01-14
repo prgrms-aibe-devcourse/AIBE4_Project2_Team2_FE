@@ -15,6 +15,7 @@
 @import url("./mypage/_responsive.css");
 @import url("./mypage/_qna.css");
 @import url("./mypage/_qnaEditModal.css");
+@import url("./mypage/_sort-bar.css");
 
 .mypage-stars .star {
   color: rgba(45, 45, 58, 0.18);

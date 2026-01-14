@@ -33,6 +33,7 @@
 .mypage-activity-body {
   padding: 22px 22px 18px;
   height: 750px;
+  height: calc(120vh - 240px);
   display: flex;
   flex-direction: column;
   gap: 12px;

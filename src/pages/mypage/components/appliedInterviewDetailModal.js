@@ -60,7 +60,7 @@ function ensureModal() {
 }
 
 function renderDetail(item) {
-  const major = item?.major || {};
+  const major = item?.peer || {};
   const interview = item?.interview || {};
 
   const profileImageUrl = String(major?.profileImageUrl || "").trim();

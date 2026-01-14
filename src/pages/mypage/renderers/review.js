@@ -3,18 +3,20 @@ import { escapeHtml, escapeAttr } from "../utils/dom.js";
 import { renderStars } from "../utils/format.js";
 
 export function renderWrittenReviewItem(item) {
-  const major = item?.major || {};
+  // 변경: ReviewResponse 구조(viewType, peer, review, interview, createdAt, updatedAt)
+  const peer = item?.peer || {};
   const review = item?.review || {};
+  const interview = item?.interview || {};
 
-  const reviewId = review?.reviewId;
-  const interviewId = review?.interviewId;
+  const reviewId = String(review?.reviewId ?? "").trim();
+  const interviewId = String(interview?.interviewId ?? "").trim();
 
-  const profileImageUrl = String(major?.profileImageUrl || "").trim();
+  const profileImageUrl = String(peer?.profileImageUrl || "").trim();
 
-  const nick = safeText(major?.nickname, "-");
-  const uniMajor = `${safeText(major?.university, "")}${
-    major?.university && major?.major ? " / " : ""
-  }${safeText(major?.major, "")}`.trim();
+  const nick = safeText(peer?.nickname, "-");
+  const uniMajor = `${safeText(peer?.university, "")}${
+    peer?.university && peer?.major ? " / " : ""
+  }${safeText(peer?.major, "")}`.trim();
 
   const rating = clampInt(review?.rating, 0, 5);
   const content = safeText(review?.content, "");
@@ -37,17 +39,15 @@ export function renderWrittenReviewItem(item) {
       <div class="mypage-review-top">
         <div class="mypage-review-left">
           <div class="mypage-review-avatar" style="${
-            profileImageUrl
-              ? `background-image:url('${escapeAttr(profileImageUrl)}')`
-              : ""
+            profileImageUrl ? `background-image:url('${escapeAttr(profileImageUrl)}')` : ""
           }"></div>
 
           <div class="mypage-review-head">
             <div class="mypage-item-title">${escapeHtml(nick)}${
-    uniMajor
-      ? ` <span class="mypage-review-sub">(${escapeHtml(uniMajor)})</span>`
-      : ""
-  }</div>
+              uniMajor
+                ? ` <span class="mypage-review-sub">(${escapeHtml(uniMajor)})</span>`
+                : ""
+            }</div>
             <div class="mypage-stars">${renderStars(rating)}</div>
           </div>
         </div>
@@ -62,9 +62,7 @@ export function renderWrittenReviewItem(item) {
             edited
               ? `<div class="mypage-date mypage-date--edited">
                    <span class="mypage-date-label">수정일</span>
-                   <span class="mypage-date-value">${escapeHtml(
-                     updatedDate
-                   )}</span>
+                   <span class="mypage-date-value">${escapeHtml(updatedDate)}</span>
                  </div>`
               : ""
           }
@@ -72,9 +70,7 @@ export function renderWrittenReviewItem(item) {
       </div>
 
       <div class="mypage-review-bottom">
-        <div class="mypage-review-snippet" data-no-detail="true">${escapeHtml(
-          content
-        )}</div>
+        <div class="mypage-review-snippet" data-no-detail="true">${escapeHtml(content)}</div>
 
         <button
           class="mypage-mini-btn mypage-review-edit-btn"
@@ -83,6 +79,7 @@ export function renderWrittenReviewItem(item) {
           data-review-id="${escapeAttr(reviewId)}"
           data-interview-id="${escapeAttr(interviewId)}"
           data-no-detail="true"
+          ${!interviewId ? "disabled" : ""}
         >수정하기</button>
       </div>
     </div>

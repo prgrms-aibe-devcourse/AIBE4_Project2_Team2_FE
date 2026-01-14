@@ -5,7 +5,7 @@ import { renderProfileTab } from "./renderers/profile.js";
 import { renderWrittenReviewItem } from "./renderers/review.js";
 import { openReviewDetailModal } from "./components/reviewDetailModal.js";
 import { openReviewEditModal } from "./components/reviewEditModal.js";
-import { fetchWrittenReviewDetail } from "./api.js";
+import { fetchMyReviewDetail } from "./api.js";
 
 import { renderAppliedInterviewItem } from "./renderers/appliedInterview.js";
 import { openAppliedInterviewDetailModal } from "./components/appliedInterviewDetailModal.js";
@@ -18,6 +18,8 @@ import { renderMyQuestionItem } from "./renderers/qna.js";
 import { openQnaEditModal } from "./components/qnaEditModal.js";
 import { deleteMyQuestion } from "./api.js";
 
+import { renderInterviewSortBar } from "./ui/interviewSortBar.js";
+
 import { renderPagination } from "./pagination.js";
 import {
   startOverlayLoading,
@@ -25,11 +27,22 @@ import {
   showOverlayCheck,
 } from "../../utils/overlay.js";
 
+function upper(v) {
+  return String(v ?? "")
+    .trim()
+    .toUpperCase();
+}
+
 export function initTabsSection(state) {
   const tabsEl = document.getElementById("mypageTabs");
   const listEl = document.getElementById("mypageList");
   const pagerEl = document.getElementById("mypagePagination");
   if (!tabsEl || !listEl || !pagerEl) return;
+
+  const sortBarEl = document.createElement("div");
+  sortBarEl.id = "mypageSortBar";
+  sortBarEl.className = "mypage-sortbar-wrap";
+  listEl.parentNode?.insertBefore(sortBarEl, listEl);
 
   const itemsByReviewId = new Map();
   const itemsByQuestionId = new Map();
@@ -53,6 +66,9 @@ export function initTabsSection(state) {
   });
 
   async function renderActiveTab() {
+    sortBarEl.innerHTML = "";
+    sortBarEl.style.display = "none";
+
     listEl.innerHTML = "";
     pagerEl.innerHTML = "";
     itemsByReviewId.clear();
@@ -62,6 +78,31 @@ export function initTabsSection(state) {
       renderProfileTab(state);
       return;
     }
+
+    sortBarEl.style.display = "";
+    renderInterviewSortBar(sortBarEl, {
+      currentSort: state.listSort,
+      showStatus: state.activeTab === "applied",
+      currentStatus: state.appliedStatus || "ALL",
+      onChangeSort: async (nextSort) => {
+        const next = upper(nextSort);
+        if (!next) return;
+        if (next === upper(state.listSort)) return;
+
+        state.setListSort(next);
+        await renderActiveTab();
+      },
+      onChangeStatus: async (nextStatus) => {
+        if (state.activeTab !== "applied") return;
+
+        const next = upper(nextStatus);
+        const cur = state.appliedStatus ? upper(state.appliedStatus) : "ALL";
+        if (next === cur) return;
+
+        state.setAppliedStatus(nextStatus);
+        await renderActiveTab();
+      },
+    });
 
     try {
       startOverlayLoading();
@@ -103,9 +144,7 @@ export function initTabsSection(state) {
           if (qid) itemsByQuestionId.set(qid, it);
         }
         listEl.innerHTML = items.map(renderMyQuestionItem).join("");
-
         enableQnaMoreButtons(listEl);
-
         renderPagerAlways(res?.meta);
         return;
       }
@@ -221,7 +260,7 @@ export function initTabsSection(state) {
         const row = toggleBtn.closest?.(".mypage-qna-item");
         if (!row) return;
 
-        const target = toggleBtn.getAttribute("data-target"); // question | answer
+        const target = toggleBtn.getAttribute("data-target");
         const open = toggleBtn.getAttribute("data-open") === "true";
 
         const shortEl = row.querySelector(
@@ -234,7 +273,6 @@ export function initTabsSection(state) {
             ? '[data-part="q-full"]'
             : '[data-part="a-full"]'
         );
-
         if (!shortEl || !fullEl) return;
 
         const nextOpen = !open;
@@ -252,7 +290,6 @@ export function initTabsSection(state) {
           toggleBtn.setAttribute("data-open", "false");
           toggleBtn.setAttribute("aria-expanded", "false");
         }
-
         return;
       }
 
@@ -271,10 +308,7 @@ export function initTabsSection(state) {
         const item = itemsByQuestionId.get(questionId);
         if (!item) return;
 
-        openQnaEditModal({
-          questionId,
-          content: item?.questionContent ?? "",
-        });
+        openQnaEditModal({ questionId, content: item?.questionContent ?? "" });
         return;
       }
 
@@ -293,7 +327,6 @@ export function initTabsSection(state) {
         await confirmDeleteMyQuestion({ questionId });
         return;
       }
-
       return;
     }
   }
@@ -388,7 +421,7 @@ export function initTabsSection(state) {
   async function openReviewDetailWithLoading(reviewId) {
     try {
       startOverlayLoading();
-      const res = await fetchWrittenReviewDetail(reviewId);
+      const res = await fetchMyReviewDetail(reviewId);
       if (!res?.success) throw new Error(res?.message || "detail failed");
       openReviewDetailModal(res.data);
     } catch {

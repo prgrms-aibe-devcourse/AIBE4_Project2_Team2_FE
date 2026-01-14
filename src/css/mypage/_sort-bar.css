@@ -1,0 +1,93 @@
+/* =========================
+   MyPage Sort Bar
+   ========================= */
+
+.mypage-sortbar-wrap {
+  margin: 12px 0 10px;
+}
+
+.mypage-sortbar {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mypage-sortbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mypage-sortbar-row--top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mypage-sortbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mypage-sortbar-right {
+  margin-left: auto; /* 핵심: 오른쪽 끝으로 */
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+
+.mypage-sortbtn,
+.mypage-filterbtn {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease,
+    border-color 120ms ease;
+}
+
+.mypage-sortbtn:hover,
+.mypage-filterbtn:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.mypage-sortbtn:active,
+.mypage-filterbtn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.mypage-sortbtn.is-active,
+.mypage-filterbtn.is-active {
+  background: var(--pastel-green-soft);
+  border-color: rgba(184, 233, 134, 0.85);
+  box-shadow: 0 0 0 4px rgba(212, 244, 167, 0.28);
+}
+
+.mypage-sortbtn:focus-visible,
+.mypage-filterbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* 모바일에서 너무 꽉 차면 버튼이 알아서 줄바꿈 */
+@media (max-width: 480px) {
+  .mypage-sortbtn,
+  .mypage-filterbtn {
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+}

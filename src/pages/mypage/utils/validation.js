@@ -16,23 +16,34 @@ export function validateProfileUpdate(payload, me) {
   const newPassword = String(payload.newPassword || "").trim();
   const newPasswordConfirm = String(payload.newPasswordConfirm || "").trim();
 
-  if (newPassword || newPasswordConfirm) {
-    if (newPassword !== newPasswordConfirm) {
-      fieldErrors.newPasswordConfirm = "새 비밀번호가 일치하지 않습니다.";
+  const isLocal = isLikelyLocalUser(me);
+  const hasAnyPwdInput = Boolean(
+    currentPassword || newPassword || newPasswordConfirm
+  );
+
+  // 소셜 계정: 비밀번호 관련 입력이 조금이라도 있으면 금지
+  if (!isLocal) {
+    if (hasAnyPwdInput) {
+      if (currentPassword) {
+        fieldErrors.currentPassword =
+          "소셜 계정은 현재 비밀번호를 입력할 수 없습니다.";
+      }
+      if (newPassword) {
+        fieldErrors.newPassword = "소셜 계정은 비밀번호를 변경할 수 없습니다.";
+      }
+      if (newPasswordConfirm) {
+        fieldErrors.newPasswordConfirm =
+          "소셜 계정은 비밀번호를 변경할 수 없습니다.";
+      }
     }
+
+    const ok = Object.keys(fieldErrors).length === 0;
+    return { ok, fieldErrors, message: ok ? "" : "입력값을 확인해 주세요." };
   }
 
-  const isLocal = isLikelyLocalUser(me);
-
-  if (!isLocal) {
-    if (currentPassword) {
-      fieldErrors.currentPassword =
-        "소셜 계정은 현재 비밀번호를 보낼 수 없습니다.";
-    }
-    if (newPassword) {
-      fieldErrors.newPassword = "소셜 계정은 비밀번호를 변경할 수 없습니다.";
-    }
-  } else {
+  // 로컬 계정: 비밀번호 변경은 선택
+  // 단, 변경을 시도했다면(current/new/confirm 중 하나라도 입력) 세 값 모두 필요
+  if (hasAnyPwdInput) {
     if (!currentPassword) {
       fieldErrors.currentPassword = "현재 비밀번호가 필요합니다.";
     } else {
@@ -40,9 +51,22 @@ export function validateProfileUpdate(payload, me) {
       if (curErr) fieldErrors.currentPassword = curErr;
     }
 
-    if (newPassword) {
+    if (!newPassword) {
+      fieldErrors.newPassword = "새 비밀번호가 필요합니다.";
+    } else {
       const newErr = getPasswordRuleMessage(newPassword);
       if (newErr) fieldErrors.newPassword = newErr;
+    }
+
+    if (!newPasswordConfirm) {
+      fieldErrors.newPasswordConfirm = "새 비밀번호 확인이 필요합니다.";
+    } else if (newPassword && newPassword !== newPasswordConfirm) {
+      fieldErrors.newPasswordConfirm = "새 비밀번호가 일치하지 않습니다.";
+    }
+
+    // 서버 규칙과 동일한 수준에서 미리 차단
+    if (currentPassword && newPassword && currentPassword === newPassword) {
+      fieldErrors.newPassword = "새 비밀번호는 현재 비밀번호와 달라야 합니다.";
     }
   }
 
@@ -101,21 +125,20 @@ export function getNewPasswordConfirmMessage(newPasswordRaw, confirmRaw) {
 function isLikelyLocalUser(me) {
   const provider = me?.authProvider ?? null;
 
-  // authProvider가 명시적으로 설정된 경우
   if (provider) {
     return String(provider).toUpperCase() === "LOCAL";
   }
 
-  // fallback: username으로 판단 (소셜 로그인은 google_, github_, kakao_ 등으로 시작)
   const username = me?.username ?? "";
   const userStr = String(username).toLowerCase();
-  if (userStr.startsWith("google_") ||
-      userStr.startsWith("github_") ||
-      userStr.startsWith("kakao_") ||
-      userStr.startsWith("naver_")) {
-    return false; // 소셜 로그인 사용자
+  if (
+    userStr.startsWith("google_") ||
+    userStr.startsWith("github_") ||
+    userStr.startsWith("kakao_") ||
+    userStr.startsWith("naver_")
+  ) {
+    return false;
   }
 
-  // 기본값: LOCAL 사용자로 간주
   return true;
 }
