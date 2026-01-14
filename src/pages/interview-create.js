@@ -1,4 +1,9 @@
 import { api } from "../services/api.js";
+import {
+  showOverlayCheck,
+  startOverlayLoading,
+  endOverlayLoading,
+} from "../utils/overlay.js";
 
 export async function renderInterviewCreate(root, { id }) {
   // 팝업 전용 스타일 클래스를 감싸줍니다.

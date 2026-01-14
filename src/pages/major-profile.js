@@ -1,6 +1,7 @@
 import { navigate } from "../router.js";
 import { api } from "../services/api.js";
 import { getSession } from "../auth/auth.js";
+import { showOverlayCheck, withOverlayLoading } from "../utils/overlay.js";
 
 function getStatusDisplay(status) {
   switch (status) {
@@ -41,9 +42,7 @@ export async function renderMajorProfile(root) {
           user.profileImageUrl || ""
         }');">
           ${
-            !user.profileImageUrl
-              ? `<span class="mj-avatar-empty">👤</span>`
-              : ""
+            !user.profileImageUrl ? `<span class="mj-avatar-empty"></span>` : ""
           }
         </div>
         <div class="mj-info">
@@ -65,8 +64,15 @@ export async function renderMajorProfile(root) {
       <button class="mj-tab ${
         !isAccepted ? "is-active" : ""
       }" data-tab="request">인증 현황</button>
-      <button class="mj-tab" data-tab="qna">Q&A 관리</button>
-      <button class="mj-tab" data-tab="review">리뷰</button>
+      <button class="mj-tab ${
+        isAccepted ? "" : "is-disabled"
+      }" data-tab="interviews">받은 인터뷰</button>
+      <button class="mj-tab ${
+        isAccepted ? "" : "is-disabled"
+      }" data-tab="qna">Q&A 관리</button>
+      <button class="mj-tab ${
+        isAccepted ? "" : "is-disabled"
+      }" data-tab="review">리뷰</button>
     </nav>
 
     <div id="contentArea" class="mj-content-wrapper"></div>
@@ -77,44 +83,59 @@ export async function renderMajorProfile(root) {
   const tabs = wrap.querySelectorAll(".mj-tab");
 
   tabs.forEach((tab) => {
-    tab.onclick = () => {
+    tab.onclick = async () => {
       const target = tab.dataset.tab;
 
       // [핵심 로직] 인증된 경우만 프로필 탭 접근 허용
-      if (target === "profile" && !isAccepted) {
-        alert("전공자 인증이 완료된 후에 프로필 설정이 가능합니다.");
+      const protectedTabs = ["profile", "interviews", "qna", "review"];
+      if (protectedTabs.includes(target) && !isAccepted) {
+        alert("전공자 인증이 완료된 후에 이용 가능합니다.");
         return;
       }
 
       tabs.forEach((t) => t.classList.remove("is-active"));
       tab.classList.add("is-active");
-      loadTabData(target, contentArea, user);
+
+      await withOverlayLoading(
+        async () => {
+          await loadTabData(target, contentArea, user);
+        },
+        { text: "데이터를 불러오는 중..." }
+      );
     };
   });
 
-  // 초기 로드: 인증됨 -> 프로필, 그 외 -> 인증 현황
   const initialTab = isAccepted ? "profile" : "request";
-  loadTabData(initialTab, contentArea, user);
+
+  // 초기 로드: 인증됨 -> 프로필, 그 외 -> 인증 현황
+  await withOverlayLoading(
+    async () => {
+      await loadTabData(initialTab, contentArea, user);
+    },
+    { text: "정보를 불러오고 있습니다..." }
+  );
 }
 
 async function loadTabData(tab, container, user) {
-  container.innerHTML = `<div class="mj-loading">데이터를 불러오는 중...</div>`;
-
   try {
     if (tab === "profile") {
       const res = await api.get("/major-profiles/me");
       if (res.success && res.data) renderViewMode(container, res.data, user);
       else renderEditMode(container, null, user);
     } else if (tab === "request") {
-      const res = await api.get("/major-requests/me"); // 인증 현황 API
+      const res = await api.get("/major-requests/me");
       renderRequestDetail(container, res.data);
-    } else if (tab === "qna") {
-      container.innerHTML = `<div class="mj-empty-box">준비 중인 서비스입니다. (Q&A)</div>`;
+    } else if (tab === "interviews") {
+      const res = await api.get("/members/me/interviews/received");
+      renderReceivedInterviews(container, res.data || []);
     } else if (tab === "review") {
-      container.innerHTML = `<div class="mj-empty-box">준비 중인 서비스입니다. (Review)</div>`;
+      const res = await api.get(`/members/me/reviews/received`);
+      renderReceivedReviews(container, res.data || []);
+    } else {
+      container.innerHTML = `<div class="mj-empty-box">준비 중인 서비스입니다.</div>`;
     }
   } catch (err) {
-    container.innerHTML = `<div class="mj-error">데이터 로드 실패</div>`;
+    container.innerHTML = `<div class="mj-error">데이터를 불러오지 못했습니다.</div>`;
   }
 }
 
@@ -167,33 +188,27 @@ function renderViewMode(container, profile, user) {
   `;
   // 상태 전환 버튼 이벤트
   container.querySelector("#statusToggleBtn").onclick = async () => {
-    const btn = container.querySelector("#statusToggleBtn");
-
-    try {
-      btn.disabled = true;
-      btn.style.opacity = "0.5";
-
-      const res = await api.patch("/major-profiles/status");
-
-      if (res.success) {
-        const newStatus = !profile.active;
-
-        renderViewMode(container, { ...profile, active: newStatus }, user);
-
-        console.log(`상태 변경 성공: ${newStatus ? "공개" : "비공개"}`);
-      } else {
-        alert("상태 변경 실패: " + (res.message || "알 수 없는 오류"));
-        btn.disabled = false;
-        btn.style.opacity = "1";
-      }
-    } catch (err) {
-      console.error("Toggle Error:", err);
-      alert("서버 통신 중 오류가 발생했습니다.");
-      btn.disabled = false;
-      btn.style.opacity = "1";
-    }
+    await withOverlayLoading(
+      async () => {
+        try {
+          const res = await api.patch("/major-profiles/status");
+          if (res.success) {
+            const newStatus = !profile.active;
+            renderViewMode(container, { ...profile, active: newStatus }, user);
+            showOverlayCheck({
+              text: newStatus
+                ? "공개로 전환되었습니다."
+                : "비공개로 전환되었습니다.",
+              durationMs: 800,
+            });
+          }
+        } catch (err) {
+          alert("상태 변경 중 오류가 발생했습니다.");
+        }
+      },
+      { text: "상태 변경 중..." }
+    );
   };
-
   container.querySelector("#editBtn").onclick = () =>
     renderEditMode(container, profile, user);
   container.querySelector("#backBtn").onclick = () => navigate("/");
@@ -310,18 +325,27 @@ function renderEditMode(container, profile, user) {
         tags,
       };
 
-      try {
-        const res = isEdit
-          ? await api.patch("/major-profiles", payload)
-          : await api.post("/major-profiles", payload);
+      await withOverlayLoading(
+        async () => {
+          try {
+            const res = profile
+              ? await api.patch("/major-profiles", payload)
+              : await api.post("/major-profiles", payload);
 
-        if (res.success) {
-          alert("저장되었습니다.");
-          location.reload();
-        }
-      } catch (err) {
-        alert("저장 중 오류가 발생했습니다.");
-      }
+            if (res.success) {
+              showOverlayCheck({
+                text: "프로필이 저장되었습니다!",
+                durationMs: 1000,
+              });
+              // 저장 후 1초 뒤에 뷰 모드로 전환하거나 새로고침
+              setTimeout(() => location.reload(), 1000);
+            }
+          } catch (err) {
+            alert("저장 중 오류가 발생했습니다.");
+          }
+        },
+        { text: "프로필 정보를 저장하고 있습니다..." }
+      );
     };
   }
 
@@ -429,4 +453,240 @@ function renderRequestDetail(container, request) {
       navigate("/apply");
     };
   }
+}
+
+function renderReceivedInterviews(container, interviews) {
+  if (!interviews || interviews.length === 0) {
+    container.innerHTML = `
+      <div class="mj-card mj-empty-card">
+        <p class="mj-empty-msg">아직 들어온 인터뷰 신청이 없습니다.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="mj-interview-list">
+      <div class="mj-list-header" style="margin-bottom: 16px;">
+        <span class="mj-list-count">나에게 온 요청 총 <strong>${interviews.length}</strong>건</span>
+      </div>
+      <div id="interviewItems"></div>
+    </div>
+  `;
+
+  const listArea = container.querySelector("#interviewItems");
+
+  interviews.forEach((item) => {
+    const { status, createdAt, interview, student } = item;
+    const card = document.createElement("div");
+    card.className = "mj-card mj-card--interview";
+
+    // 상태 배지 클래스 매핑
+    const statusMap = {
+      PENDING: { label: "신규 요청", class: "mj-badge--pending" },
+      ACCEPTED: { label: "수락함", class: "mj-badge--accepted" },
+      REJECTED: { label: "거절함", class: "mj-badge--rejected" },
+      COMPLETED: { label: "진행 완료", class: "mj-badge--none" },
+    };
+    const currentStatus = statusMap[status] || { label: status, class: "" };
+
+    const preferredDate = new Date(interview.preferredDatetime).toLocaleString(
+      "ko-KR",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }
+    );
+
+    card.innerHTML = `
+      <div class="mj-interview-item">
+        <div class="mj-item-top">
+          <span class="mj-info__badge ${currentStatus.class}">${
+      currentStatus.label
+    }</span>
+          <span class="mj-item-date">신청일: ${new Date(
+            createdAt
+          ).toLocaleDateString()}</span>
+        </div>
+        
+        <div class="mj-item-mid">
+          <div class="mj-student-info">
+            <strong>${student.nickname}</strong> <span class="mj-sub-text">${
+      student.university
+    }</span>
+          </div>
+          <p class="mj-item-title">${interview.title}</p>
+          <div class="mj-time-box">
+             <p class="mj-time-label">📅 인터뷰 희망 시간</p>
+             <p class="mj-time-value">${preferredDate}</p>
+          </div>
+        </div>
+
+        ${
+          status === "PENDING"
+            ? `
+          <div class="mj-response-area">
+            <textarea class="mj-response-input" placeholder="학생에게 메시지를 남겨주세요."></textarea>
+            <div class="mj-item-actions">
+              <button class="mj-btn-mm mj-btn-mm--accept">인터뷰 수락</button>
+              <button class="mj-btn-mm mj-btn-mm--reject">거절</button>
+            </div>
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          status === "ACCEPTED"
+            ? `
+          <div class="mj-item-actions" style="margin-top: 12px;">
+            <button class="mj-btn-mm mj-btn-mm--complete" style="width: 100%; background: var(--pastel-green-strong); color: var(--dark-text);">
+              인터뷰 진행 완료
+            </button>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
+
+    // 이벤트 바인딩
+    if (status === "PENDING") {
+      const msgInput = card.querySelector(".mj-response-input");
+      card.querySelector(".mj-btn-mm--accept").onclick = () =>
+        handleInterviewStatus(
+          interview.interviewId,
+          "ACCEPTED",
+          msgInput.value
+        );
+      card.querySelector(".mj-btn-mm--reject").onclick = () =>
+        handleInterviewStatus(
+          interview.interviewId,
+          "REJECTED",
+          msgInput.value
+        );
+    } else if (status === "ACCEPTED") {
+      card.querySelector(".mj-btn-mm--complete").onclick = () =>
+        handleInterviewStatus(interview.interviewId, "COMPLETED");
+    }
+
+    listArea.appendChild(card);
+  });
+}
+
+// 인터뷰 상태 변경 처리 함수 (메시지 인자 추가)
+async function handleInterviewStatus(interviewId, newStatus, message = "") {
+  const statusMap = {
+    ACCEPTED: "accept",
+    REJECTED: "reject",
+    COMPLETED: "complete",
+  };
+  const actionText = { ACCEPTED: "수락", REJECTED: "거절", COMPLETED: "완료" }[
+    newStatus
+  ];
+
+  const confirmMsg =
+    newStatus === "COMPLETED"
+      ? "실제로 인터뷰를 완료하셨나요?\n완료 후에는 상태 변경이 불가능합니다."
+      : `이 인터뷰 요청을 ${actionText}하시겠습니까?`;
+
+  if (!confirm(confirmMsg)) return;
+
+  await withOverlayLoading(
+    async () => {
+      try {
+        const res = await api.patch(
+          `/interviews/${interviewId}/${statusMap[newStatus]}`,
+          {
+            majorMessage: message,
+          }
+        );
+
+        if (res.success) {
+          showOverlayCheck({
+            text: `${actionText} 처리가 완료되었습니다.`,
+            durationMs: 800,
+          });
+          // 탭 갱신 로직 (setTimeout으로 체크 오버레이 보여줄 시간 확보)
+          setTimeout(() => {
+            const interviewTabBtn = document.querySelector(
+              '.mj-tab[data-tab="interviews"]'
+            );
+            if (interviewTabBtn) interviewTabBtn.click();
+          }, 800);
+        }
+      } catch (err) {
+        alert("서버 통신 오류가 발생했습니다.");
+      }
+    },
+    { text: "처리 중입니다..." }
+  );
+}
+
+function renderReceivedReviews(container, reviews) {
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `
+      <div class="mj-card mj-empty-card">
+        <p class="mj-empty-msg">아직 작성된 인터뷰 리뷰가 없습니다.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="mj-review-list">
+      <div class="mj-list-header" style="margin-bottom: 16px;">
+        <span class="mj-list-count">학생들의 소중한 후기 <strong>${reviews.length}</strong>건</span>
+      </div>
+      <div id="reviewItems"></div>
+    </div>
+  `;
+
+  const listArea = container.querySelector("#reviewItems");
+
+  reviews.forEach((item) => {
+    const { student, review, createdAt } = item;
+    const card = document.createElement("div");
+    card.className = "mj-card mj-card--review";
+
+    // 별점 생성을 위한 로직 (5점 만점)
+    const stars = "⭐".repeat(review.rating);
+    const dateStr = new Date(createdAt).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    card.innerHTML = `
+      <div class="mj-review-item">
+        <div class="mj-review-top">
+          <div class="mj-review-student">
+            <div class="mj-student-avatar" style="background-image: url('${
+              student.profileImageUrl || ""
+            }');">
+              ${!student.profileImageUrl ? "👤" : ""}
+            </div>
+            <div class="mj-student-meta">
+              <span class="mj-student-nick">${student.nickname}</span>
+              <span class="mj-student-univ">${student.university} · ${
+      student.major
+    }</span>
+            </div>
+          </div>
+          <span class="mj-review-date">${dateStr}</span>
+        </div>
+
+        <div class="mj-review-body">
+          <div class="mj-rating-box">${stars} <span class="mj-rating-num">${
+      review.rating
+    }.0</span></div>
+          <p class="mj-review-text">"${review.content}"</p>
+        </div>
+      </div>
+    `;
+
+    listArea.appendChild(card);
+  });
 }

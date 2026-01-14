@@ -507,7 +507,7 @@
 }
 
 .mj-btn--reapply:hover {
- background-color: #fff1f2;
+  background-color: #fff1f2;
   box-shadow: 0 4px 12px rgba(156, 245, 185, 0.3);
 }
 
@@ -682,4 +682,241 @@
 }
 .mj-history-marker.status-rejected {
   background: #dc2626;
+}
+
+/* 받은 인터뷰 목록용 추가 CSS */
+.mj-card--interview {
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #eef0f3;
+  transition: transform 0.2s ease;
+}
+
+.mj-card--interview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.mj-item-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mj-item-author {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.mj-item-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mj-item-bot {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.mj-student-info {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.mj-student-name {
+  font-size: 15px;
+  color: #1e293b;
+}
+.mj-student-univ {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.mj-item-meta {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 6px;
+}
+/* 인터뷰 카드 내부 상세 스타일 */
+
+/* 받은 인터뷰 카드 커스텀 */
+.mj-card--interview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.mj-time-box {
+  background: var(--pastel-green-soft);
+  border: 1px solid var(--pastel-green);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.mj-time-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 4px 0;
+}
+
+.mj-time-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--dark-text);
+  margin: 0;
+}
+
+/* 텍스트 영역 */
+.mj-response-input {
+  width: 100%;
+  height: 80px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-gray);
+  font-size: 13px;
+  resize: none;
+  margin-bottom: 12px;
+}
+
+.mj-response-input:focus {
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: var(--pastel-green-strong);
+}
+
+/* 테마 버튼 */
+.mj-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mj-btn-mm {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.mj-btn-mm--accept {
+  background: var(--dark-text); /* 앱의 메인 포인트 버튼 색상 */
+  color: #fff;
+}
+
+.mj-btn-mm--reject {
+  background: var(--mm-label-bg);
+  color: var(--mm-label-text);
+  border: 1px solid var(--mm-label-border);
+}
+
+.mj-btn-mm--accept:hover {
+  background: #000;
+  transform: translateY(-1px);
+}
+.mj-btn-mm--reject:hover {
+  background: var(--line);
+}
+
+/* 리뷰 카드 스타일 */
+.mj-card--review {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: transform 0.2s ease;
+}
+
+.mj-review-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.mj-review-student {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mj-student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--pastel-green-soft);
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: 1px solid var(--line);
+}
+
+.mj-student-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.mj-student-nick {
+  font-weight: 800;
+  color: var(--dark-text);
+  font-size: 14px;
+}
+
+.mj-student-univ {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mj-review-date {
+  font-size: 11px;
+  color: var(--mm-label-text);
+}
+
+/* 리뷰 본문 */
+.mj-review-body {
+  background: var(--bg-gray);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--pastel-green-strong);
+}
+
+.mj-rating-box {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.mj-rating-num {
+  font-weight: 800;
+  margin-left: 4px;
+  color: var(--dark-text);
+}
+
+.mj-review-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--dark-text);
+  white-space: pre-wrap; /* 줄바꿈 허용 */
 }

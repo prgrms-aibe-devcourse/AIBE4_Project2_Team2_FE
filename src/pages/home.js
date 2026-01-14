@@ -2,6 +2,7 @@
 import { getSession } from "../auth/auth.js";
 import { navigate } from "../router.js";
 import { api, ApiError } from "../services/api.js";
+import { withOverlayLoading } from "../utils/overlay.js";
 
 const PAGE_SIZE = 8;
 const APPLY_SLOT_INDEX = 2; // 0-based, 3번째 위치
@@ -28,48 +29,46 @@ export async function renderHome(root) {
     if (state.isLoading) return;
     state.isLoading = true;
 
-    try {
-      // 검색어 처리
-      let url = `/major-profiles?page=${state.page - 1}&size=${PAGE_SIZE}`;
+    // [수정 포인트] withOverlayLoading으로 API 호출 감싸기
+    await withOverlayLoading(
+      async () => {
+        try {
+          let url = `/major-profiles?page=${state.page - 1}&size=${PAGE_SIZE}`;
 
-      if (state.query && state.query.trim()) {
-        const query = state.query.trim();
-
-        // #으로 시작하면 태그 검색, 그 외에는 통합 검색
-        if (query.startsWith('#')) {
-          // 태그 검색: # 제거 후 전달
-          const tag = query.substring(1).trim();
-          if (tag) {
-            url += `&searchType=tag&keyword=${encodeURIComponent(tag)}`;
+          if (state.query && state.query.trim()) {
+            const query = state.query.trim();
+            if (query.startsWith("#")) {
+              const tag = query.substring(1).trim();
+              if (tag)
+                url += `&searchType=tag&keyword=${encodeURIComponent(tag)}`;
+            } else {
+              url += `&searchType=all&keyword=${encodeURIComponent(query)}`;
+            }
           }
-        } else {
-          // 닉네임/학교/학과 통합 검색
-          url += `&searchType=all&keyword=${encodeURIComponent(query)}`;
+
+          const result = await api.get(url);
+
+          if (result?.success) {
+            const pageData = result.data;
+            state.profiles = pageData.content;
+            state.totalPages = pageData.totalPages;
+
+            render();
+            updatePagination();
+
+            // 페이지 상단으로 스크롤 (사용자 경험 향상)
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            console.error("전공자 목록 조회 실패:", result?.message);
+          }
+        } catch (e) {
+          console.error("서버 통신 오류:", e);
+        } finally {
+          state.isLoading = false;
         }
-      }
-
-      const result = await api.get(url);
-
-      if (result?.success) {
-        const pageData = result.data; // Page<MajorCardResponse>
-        state.profiles = pageData.content; // 현재 페이지의 데이터 목록
-        state.totalPages = pageData.totalPages; // 전체 페이지 수
-
-        console.log(`페이지 ${state.page} 로드 성공:`, state.profiles);
-
-        render();
-        updatePagination();
-      } else {
-        console.error(
-          "전공자 목록 조회 실패:",
-          result?.message || "알 수 없는 오류"
-        );
-      }
-    } catch (e) {
-      console.error("서버 통신 오류:", e);
-    } finally {
-      state.isLoading = false;
-    }
+      },
+      { text: "전공자 목록을 불러오는 중입니다..." }
+    );
   }
 
   function buildHome() {
@@ -124,12 +123,21 @@ export async function renderHome(root) {
     wrap.addEventListener("click", (e) => {
       const tagBtn = e.target.closest("[data-tag]");
       if (!tagBtn) return;
-      const tag = tagBtn.getAttribute("data-tag") || "";
-      // 태그 검색은 #을 붙여서 검색
-      const searchQuery = tag.startsWith('#') ? tag : `#${tag}`;
-      state.query = searchQuery;
-      state.page = 1;
-      input.value = searchQuery;
+
+      // 1. 데이터 속성에서 태그명 가져오기
+      let tag = tagBtn.getAttribute("data-tag") || "";
+
+      // 2. 만약 데이터에 #이 포함되어 있다면 제거 (순수 텍스트만 추출)
+      const pureTag = tag.replace(/^#/, "").trim();
+
+      // 3. UI(검색창)에는 사용자 친화적으로 #을 붙여서 표시
+      const displayTag = `#${pureTag}`;
+
+      state.query = displayTag; // 상태 업데이트
+      state.page = 1; // 페이지 초기화
+      input.value = displayTag; // 검색창 텍스트 업데이트
+
+      // 4. 데이터 로드 호출
       loadProfiles();
     });
 
@@ -235,7 +243,10 @@ export async function renderHome(root) {
       card.style.cursor = "pointer";
 
       // 카드 클릭 시 상세 페이지 이동
-      card.addEventListener("click", () => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".tag") || e.target.closest(".btn-like")) {
+          return;
+        }
         navigate(`/major-card-detail/${p.id}`);
       });
 
@@ -313,8 +324,9 @@ export async function renderHome(root) {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "tag";
+        const tagName = typeof t === "object" ? t : t;
         b.textContent = t.startsWith("#") ? t : `#${t}`;
-        b.setAttribute("data-tag", t);
+        b.setAttribute("data-tag", tagName);
         tags.appendChild(b);
       }
       card.appendChild(tags);
