@@ -14,8 +14,11 @@ import { renderFindUsername } from "./pages/find-username.js";
 import { renderFindPassword } from "./pages/find-password.js";
 
 import { renderApply } from "./pages/apply.js";
+import { renderMajorProfile } from "./pages/major-profile.js";
 import { renderMajorRoleRequest } from "./pages/major-role-request.js";
 import { renderMajorRequestDetail } from "./pages/major-role-request-detail.js";
+
+import { renderInterviewCreate } from "./pages/interview-create.js";
 
 import { renderMyMajorProfile } from "./pages/my-major-profile.js";
 
@@ -34,7 +37,9 @@ const PUBLIC_PATHS = new Set([
 const routes = {
   "/": renderHome,
   "/mypage": renderMyPage,
+  "/interview-create/:id": renderInterviewCreate,
   "/apply": renderApply,
+  "/major-profile": renderMajorProfile,
   "/major-role-request": renderMajorRoleRequest,
   "/major-role-request-detail/:id": renderMajorRequestDetail,
   "/my-major-profile": renderMyMajorProfile,
@@ -114,9 +119,9 @@ function route() {
     return;
   }
 
-  const profileId = matchPath(path, "/profile/:id");
-  if (profileId) {
-    renderProfileDetail(view, { id: profileId.id });
+  const interviewerId = matchPath(path, "/interview-create/:id");
+  if (interviewerId) {
+    renderInterviewCreate(view, { id: interviewerId.id });
     return;
   }
 
@@ -189,14 +194,22 @@ function toggleHeaderForAuth(path) {
   const header = document.getElementById("siteHeader");
   if (!header) return;
   const isAuth = PUBLIC_PATHS.has(path);
-  header.style.display = isAuth ? "none" : "";
+  const isDetailPage = path.startsWith("/major-role-request-detail/");
+  const isInterviewPopUp = path.startsWith("/interview-create/");
+  if (isAuth || isDetailPage || isInterviewPopUp) {
+    header.style.display = "none";
+  } else {
+    header.style.display = "";
+  }
 }
 
 function syncRouteStyles(path) {
   const files = getCssFilesForPath(path);
   const head = document.head;
 
-  head.querySelectorAll('link[data-route-style="1"]').forEach((el) => el.remove());
+  head
+    .querySelectorAll('link[data-route-style="1"]')
+    .forEach((el) => el.remove());
 
   for (const href of files) {
     const link = document.createElement("link");
@@ -215,10 +228,14 @@ function getCssFilesForPath(path) {
   if (p === "/mypage") return ["src/css/mypage.css"];
   if (p.startsWith("/mypage/")) return ["src/css/mypage.css"];
   if (p === "/apply") return ["src/css/apply.css"];
+  if (p.startsWith("/interview-create/"))
+    return ["src/css/interview-create.css"];
+  if (p === "/major-profile") return ["src/css/major-profile.css"];
   if (p === "/recommend") return ["src/css/recommend.css"];
   if (p === "/manager") return ["src/css/manager.css"];
-  if (p === "/major-role-request/") return ["src/css/major-role-request.css"];
-  if (p.startsWith("/major-role-request-detail/")) return ["src/css/major-role-request-detail.css"];
+  if (p === "/major-role-request") return ["src/css/major-role-request.css"];
+  if (p.startsWith("/major-role-request-detail/"))
+    return ["src/css/major-role-request-detail.css"];
   if (p.startsWith("/major-card-detail/")) return ["src/css/profileDetail.css"];
   return [];
 }
@@ -236,7 +253,8 @@ function bindHeaderActions() {
   const menuLogout = document.getElementById("menuLogout");
 
   if (mypageBtn) mypageBtn.addEventListener("click", () => navigate("/mypage"));
-  if (managerBtn) managerBtn.addEventListener("click", () => navigate("/manager"));
+  if (managerBtn)
+    managerBtn.addEventListener("click", () => navigate("/manager"));
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {

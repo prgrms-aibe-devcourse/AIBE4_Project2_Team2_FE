@@ -49,6 +49,21 @@ export async function renderProfileDetail(root, { id }) {
   root.appendChild(wrap);
   renderBottom();
 
+  window.addEventListener(
+    "mj:interview-created",
+    () => {
+      const applyBtn = wrap.querySelector(".pd-apply-btn");
+      if (applyBtn) {
+        applyBtn.textContent = "신청 완료";
+        applyBtn.disabled = true;
+        applyBtn.style.backgroundColor = "#94a3b8"; // 차분한 회색조로 변경
+        applyBtn.style.cursor = "default";
+      }
+      // 필요하다면 알림이나 목록 새로고침 로직을 추가할 수 있습니다.
+    },
+    { once: true }
+  ); // 일회성 리스너로 등록하여 메모리 누수 방지
+
   function renderTopCard(p) {
     const card = document.createElement("section");
     card.className = "card pd-card";
@@ -123,9 +138,7 @@ export async function renderProfileDetail(root, { id }) {
     applyBtn.type = "button";
     applyBtn.className = "pd-apply-btn";
     applyBtn.textContent = "인터뷰 신청하기";
-    applyBtn.addEventListener("click", () =>
-      navigate(`/apply?majorId=${p.id}`)
-    );
+    applyBtn.addEventListener("click", () => openInterviewCreatePopup(id));
 
     // 우측 영역에 좋아요와 신청 버튼 배치
     cta.appendChild(likeBtn);
@@ -334,6 +347,20 @@ export async function renderProfileDetail(root, { id }) {
     h.className = "pd-section-title";
     h.textContent = text;
     return h;
+  }
+
+  function openInterviewCreatePopup(majorId) {
+    const url = `${window.location.origin}${window.location.pathname}#/interview-create/${majorId}`;
+    const width = 600;
+    const height = 850;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    window.open(
+      url,
+      "CreateInterview",
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+    );
   }
 
   function escapeHtml(s) {

@@ -5,40 +5,29 @@ export async function renderMajorRequestDetail(root, params) {
   const requestId = params.id;
 
   const wrap = document.createElement("div");
-  wrap.className = "request-detail-wrap";
+  wrap.className = "request-detail-wrap only-content"; // 'only-content' 클래스 추가
 
   wrap.innerHTML = `
-    <h2 class="page-title">신청 상세 내역</h2>
+    <div class="detail-page-header">
+      <h2 class="page-title">신청 상세 내역</h2>
+      <button class="btn-close-window" onclick="window.close()">창 닫기</button>
+    </div>
     <div class="detail-container" id="detailContainer">
       <div class="loading">불러오는 중...</div>
-    </div>
-    <div class="btn-row">
-        <button class="btn-back" id="backBtn">목록으로</button>
     </div>
   `;
 
   root.appendChild(wrap);
-
   const detailContainer = wrap.querySelector("#detailContainer");
-  const backBtn = wrap.querySelector("#backBtn");
-
-  backBtn.addEventListener("click", () => navigate("/major-role-request")); // 목록 페이지로 이동
 
   try {
-    const token = localStorage.getItem("mm_user");
-    if (!token) {
-      alert("로그인이 필요합니다.");
-      navigate("/login");
-      return;
-    }
-
     const response = await api.get(`/major-requests/${requestId}`);
 
-    if (!response?.success && response.data) {
-      detailContainer.innerHTML = `<div class="error">조회 실패: ${errorText}</div>`;
-      return { ok: false, message: result?.message || "불러오기 실패" };
+    if (response?.success) {
+      renderDetail(detailContainer, response.data);
+    } else {
+      detailContainer.innerHTML = `<div class="error">데이터 로드 실패</div>`;
     }
-    renderDetail(detailContainer, response.data);
   } catch (error) {
     console.error("Error:", error);
     detailContainer.innerHTML = `<div class="error">서버 통신 오류</div>`;

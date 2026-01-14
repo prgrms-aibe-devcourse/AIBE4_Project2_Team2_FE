@@ -78,6 +78,11 @@ export function renderApply(root) {
       nicknameInput.value = member.nickname || "";
       schoolInput.value = member.university || "";
       majorInput.value = member.major || "";
+
+      if (member.university.size == 0 || member.major == 0) {
+        alert("지원 하기전에 학교와 전공을 입력해주세요.");
+        navigate("/mypage");
+      }
     } else {
       console.warn("세션에 회원 정보가 없습니다.");
     }

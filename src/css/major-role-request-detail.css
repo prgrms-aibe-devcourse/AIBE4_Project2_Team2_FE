@@ -1,21 +1,85 @@
-.request-detail-wrap {
-  max-width: 600px;
-  margin: 0 auto;
+/* 팝업 전용 레이아웃 */
+body {
+  background-color: #f9fafb; /* 팝업 배경을 연한 회색으로 */
+}
+
+.popup-wrapper {
   padding: 20px;
+}
+
+.popup-header {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+  z-index: 10;
+}
+
+.popup-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.btn-close:hover {
+  color: #111827;
+}
+
+.request-detail-wrap.only-content {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.detail-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 16px;
+}
+
+.btn-close-window {
+  padding: 8px 16px;
+  background: #f4f4f5;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-close-window:hover {
+  background: #e4e4e7;
+}
+
+/* 상세 카드는 흰색으로 강조 */
+.detail-card {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
 }
 
 .detail-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.detail-card {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .card-title {
@@ -69,8 +133,12 @@
   background: #ccc;
 }
 
-.history-marker.status-accepted { background: #28a745; }
-.history-marker.status-rejected { background: #dc3545; }
+.history-marker.status-accepted {
+  background: #28a745;
+}
+.history-marker.status-rejected {
+  background: #dc3545;
+}
 
 .history-header {
   display: flex;

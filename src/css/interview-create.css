@@ -1,0 +1,79 @@
+.mj-popup-container {
+  padding: 32px;
+  background-color: #ffffff;
+}
+
+.mj-popup-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f4f4f5;
+  padding-bottom: 16px;
+}
+
+.mj-popup-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #18181b;
+}
+
+.mj-popup-subtitle {
+  font-size: 0.9rem;
+  color: #71717a;
+  margin-top: 4px;
+}
+
+.mj-form-group {
+  margin-bottom: 20px;
+}
+
+.mj-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #3f3f46;
+}
+
+.required { color: #ef4444; }
+
+.mj-input, .mj-select, .mj-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.mj-textarea { resize: vertical; }
+
+.mj-help-text {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin-top: 4px;
+}
+
+.mj-popup-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #f4f4f5;
+}
+
+.mj-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mj-btn--primary {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+}
+
+.mj-btn--ghost {
+  background-color: #f4f4f5;
+  color: #3f3f46;
+  border: 1px solid #e4e4e7;
+}

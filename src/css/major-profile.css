@@ -1,0 +1,685 @@
+/* major-profile.css */
+:root {
+  --mj-primary: #d4f4a7;
+  --mj-dark: #2d2d3a;
+  --mj-muted: #848494;
+  --mj-line: rgba(0, 0, 0, 0.08);
+  --mj-bg-soft: rgba(212, 244, 167, 0.15);
+}
+
+.mj-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 헤더 영역 */
+.mj-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid var(--mj-line);
+}
+
+.mj-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--mj-bg-soft);
+  border: 1px solid var(--mj-line);
+}
+
+.mj-info__name {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--mj-dark);
+}
+.mj-info__sub {
+  font-size: 14px;
+  color: var(--mj-muted);
+  margin-top: 4px;
+}
+
+/* 탭 메뉴 스타일 보강 */
+.mj-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--mj-line);
+  gap: 8px;
+  margin-bottom: 24px; /* 본문(contentArea)과의 간격 */
+}
+
+.mj-tab {
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--mj-muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.mj-tab.is-active {
+  color: var(--mj-dark);
+}
+
+.mj-tab.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--mj-dark);
+}
+
+/* 본문 영역 (contentArea) 여백 */
+.mj-content-wrapper {
+  margin-top: 10px;
+}
+
+/* 카드 공통 (mm-card 스타일 계승) */
+.mj-card {
+  background: white;
+  border: 1px solid var(--mj-line);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+/* 상태 스위치 레이어 */
+.mj-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--mj-bg-soft);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+/* 배지 스타일 */
+.mj-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mj-badge[data-status="PENDING"] {
+  background: #fffbeb;
+  color: #b45309;
+}
+.mj-badge[data-status="ACCEPTED"] {
+  background: #f0fdf4;
+  color: #15803d;
+}
+.mj-badge[data-status="REJECTED"] {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* 모바일 대응 */
+@media (max-width: 640px) {
+  .mj-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .mj-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* major-profile.css */
+
+.mj-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* 헤더 보강 */
+.mj-header {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+.mj-header__main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.mj-info__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* 배지 상태별 색상 */
+.mj-info__badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+.mj-badge--pending {
+  background: #fffbeb;
+  color: #b45309;
+} /* 노랑 */
+.mj-badge--accepted {
+  background: #f0fdf4;
+  color: #16a34a;
+} /* 초록 */
+.mj-badge--rejected {
+  background: #fef2f2;
+  color: #dc2626;
+} /* 빨강 */
+.mj-badge--resubmitted {
+  background: #eff6ff;
+  color: #2563eb;
+} /* 파랑 */
+.mj-badge--none {
+  background: #f4f4f5;
+  color: #71717a;
+} /* 회색 */
+
+/* 비활성화 탭 스타일 */
+.mj-tab.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  position: relative;
+}
+.mj-tab.is-disabled::after {
+  content: "🔒";
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+/* 조회 카드 */
+.mj-card--view .mj-display-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  margin: 30px 0;
+  color: #1a1a1a;
+}
+.mj-display-content {
+  line-height: 1.8;
+  color: #4b5563;
+  background: #f9fafb;
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+/* 태그 디자인 */
+.mj-tag-item {
+  display: inline-block;
+  background: rgba(212, 244, 167, 0.3); /* 파스텔 그린 연하게 */
+  color: #4b6b2f; /* 진한 초록색 텍스트 */
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(212, 244, 167, 0.5);
+}
+
+/* 폼 요소 */
+.mj-form-group {
+  margin-bottom: 20px;
+}
+.mj-label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 14px;
+}
+.mj-input,
+.mj-textarea {
+  width: 100%;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 15px;
+  transition: 0.2s;
+  box-sizing: border-box;
+}
+.mj-input:focus,
+.mj-textarea:focus {
+  border-color: #2d2d3a;
+  outline: none;
+  background: #fff;
+}
+
+/* 태그 입력/편집 */
+.mj-tag-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.mj-tags-editable {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mj-tag-edit {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+}
+.mj-tag-edit button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* 버튼 공통 */
+.mj-btn {
+  height: 52px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+/* 상단 상태 표시 (점만 표시) */
+.mj-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  justify-content: flex-end; /* 우측 상단 정렬 */
+}
+
+.mj-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e5e7eb;
+}
+.mj-status-dot.active {
+  background: #10b981; /* 공개 시 에메랄드 색상 */
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.mj-status-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+/* 액션 버튼 영역 보강 */
+.mj-actions--separated {
+  margin-top: 50px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.mj-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* 상태 전환 버튼 스타일링 */
+/* 공개 전환 / 저장 버튼 (시그니처 그린) */
+.mj-btn--status-on,
+.mj-btn--save {
+  background: #d4f4a7; /* mj-primary */
+  color: #2d2d3a;
+}
+
+.mj-btn--status-on:hover,
+.mj-btn--save:hover {
+  background: #c5e696;
+  transform: translateY(-1px);
+}
+
+/* 비공개 전환 / 취소 / 수정 버튼 (시그니처 다크) */
+.mj-btn--status-off,
+.mj-btn--primary {
+  background: #2d2d3a;
+  color: #ffffff;
+}
+
+.mj-btn--status-off:hover,
+.mj-btn--primary:hover {
+  background: #1a1a24;
+  transform: translateY(-1px);
+}
+
+/* 메인으로 돌아가기 (고스트 버튼) */
+.mj-btn--ghost {
+  background: transparent;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  margin-top: 8px;
+}
+
+.mj-btn-add {
+  padding: 0 20px;
+  background: var(--mj-dark); /* 다크 그레이 */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.mj-btn-add:hover {
+  background: #1a1a24;
+}
+
+/* 2. 수정 모드 태그(mj-tag-edit) 내부 삭제 버튼 컬러 수정 */
+.mj-tag-edit button {
+  background: none;
+  border: none;
+  color: #ef4444; /* 흰색(white)에서 빨간색으로 변경 (가독성 때문) */
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 0 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* 3. 태그 리스트 상단 여백 (태그가 추가될 때 입력창과 띄워줌) */
+.mj-tags-editable {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px; /* 여백 추가 */
+}
+
+/* 4. 수정 모드에서 태그 배경색 (홈 화면 스타일 유지 원할 시) */
+.mj-tag-edit {
+  background: rgba(212, 244, 167, 0.2); /* mj-primary 연하게 */
+  color: #4b6b2f;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(212, 244, 167, 0.4);
+}
+
+/* 모바일 대응 */
+@media (max-width: 480px) {
+  .mj-actions-row {
+    grid-template-columns: 1fr; /* 모바일에서는 세로로 쌓음 */
+  }
+}
+
+/* 인증 현황 카드 전용 */
+.mj-card--request {
+  padding: 30px;
+}
+
+.mj-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+/* 코멘트 박스 디자인 (본문 영역과 유사하게) */
+.mj-comment-box {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--mj-line);
+  line-height: 1.6;
+  font-size: 15px;
+  color: #334155;
+  margin-top: 6px;
+}
+
+/* 반려 사유 섹션 */
+.mj-reject-section {
+  border-top: 1px dashed #fee2e2;
+  padding-top: 20px;
+}
+
+.mj-reject-reason {
+  background: #fff1f2;
+  color: #be123c;
+  padding: 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid #ffe4e6;
+}
+
+.mj-icon-warn {
+  font-size: 18px;
+}
+
+/* 하단 버튼 영역 배치 */
+.mj-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed #eee;
+}
+
+/* 재제출 버튼 스타일 */
+.mj-btn--reapply {
+  background: #d4f4a7; /* mj-primary */
+  color: #2d2d3a;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  border: none;
+}
+
+.mj-btn--reapply:hover {
+ background-color: #fff1f2;
+  box-shadow: 0 4px 12px rgba(156, 245, 185, 0.3);
+}
+
+/* 반려 섹션 강조 */
+.mj-reject-section {
+  background-color: #fff1f2;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+/* 데이터 없을 때의 카드 */
+.mj-empty-card {
+  text-align: center;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.mj-empty-msg {
+  color: var(--mj-muted);
+  font-weight: 600;
+}
+
+/* 모달 크기 확장 */
+.mj-modal-content--large {
+  max-width: 600px;
+  max-height: 90vh;
+}
+
+/* 내부 카드 스타일 */
+.mj-modal-card {
+  background: #ffffff;
+  border: 1px solid var(--mj-line);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.mj-card-sub-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: var(--mj-dark);
+}
+
+/* 기본 정보 그리드 */
+.mj-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.mj-info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.mj-info-item label {
+  color: var(--mj-muted);
+  font-weight: 600;
+}
+.mj-info-item span {
+  font-weight: 700;
+  color: var(--mj-dark);
+}
+
+/* 증빙 서류 이미지 */
+.mj-document-area {
+  margin-top: 16px;
+  border-top: 1px solid var(--mj-line);
+  padding-top: 16px;
+}
+.mj-document-img {
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 8px;
+  cursor: zoom-in;
+  transition: opacity 0.2s;
+}
+.mj-document-img:hover {
+  opacity: 0.9;
+}
+.mj-img-tip {
+  font-size: 12px;
+  color: var(--mj-muted);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* 타임라인 디자인 */
+.mj-history-timeline {
+  list-style: none;
+  padding: 0;
+  position: relative;
+}
+.mj-history-item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 20px;
+}
+.mj-history-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 15px;
+  bottom: 0;
+  width: 2px;
+  background: var(--mj-line);
+}
+.mj-history-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  margin-top: 4px;
+  z-index: 1;
+}
+.mj-history-main {
+  flex: 1;
+}
+.mj-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.mj-history-status {
+  font-size: 13px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.mj-history-date {
+  font-size: 12px;
+  color: var(--mj-muted);
+}
+.mj-history-actor {
+  font-size: 12px;
+  color: var(--mj-muted);
+  margin-bottom: 6px;
+}
+.mj-history-reason {
+  font-size: 13px;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #475569;
+}
+
+/* 상태별 색상 (badge/marker/status 공통) */
+.status-pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+.status-accepted {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.status-rejected {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.status-resubmitted {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.mj-history-marker.status-accepted {
+  background: #16a34a;
+}
+.mj-history-marker.status-rejected {
+  background: #dc2626;
+}

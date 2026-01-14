@@ -321,7 +321,7 @@ export async function renderHome(root) {
           title = "심사 진행 중";
           desc = "전공자 인증 심사가 진행 중입니다.<br />조금만 기다려 주세요!";
           btnText = "심사 현황 보기";
-          targetPath = "/major-role-request";
+          targetPath = "/major-profile";
           break;
 
         case "REJECTED":
@@ -329,7 +329,7 @@ export async function renderHome(root) {
           desc =
             "인증 요청이 반려되었습니다.<br />사유를 확인하고 다시 시도해 주세요.";
           btnText = "재신청 하기";
-          targetPath = "/major-role-request";
+          targetPath = "/major-profile";
           break;
 
         case "ACCEPTED":
@@ -337,7 +337,7 @@ export async function renderHome(root) {
           desc =
             "전공자 인증이 완료되었습니다!<br />당신의 지식을 공유해 보세요.";
           btnText = "내 프로필 보기";
-          targetPath = "/my-major-profile";
+          targetPath = "/major-profile";
           break;
 
         default:
