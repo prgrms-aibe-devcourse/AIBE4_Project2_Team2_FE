@@ -7,12 +7,15 @@ import {
 } from "../../../utils/overlay.js";
 import { updateQuestion } from "../api.js";
 
-let mounted = false;
 let bound = false;
 
 export function ensureQnaEditModal() {
-  if (mounted) return;
-  mounted = true;
+  // SPA에서 DOM이 제거될 수 있으니 mounted 플래그가 아니라 "실제 DOM 존재"로 판단한다
+  const existing = document.getElementById("qnaEditModal");
+  if (existing) {
+    bindOnce();
+    return;
+  }
 
   const el = document.createElement("div");
   el.id = "qnaEditModal";
@@ -78,11 +81,11 @@ function renderForm({ questionId, content }) {
           <div class="mm-textarea-wrap">
             <textarea class="mm-textarea mm-textarea--fixed" id="mmQnaContent" rows="10"
               placeholder="질문 내용을 입력한다"
-              maxlength="5000"
+              maxlength="3000"
             >${escapeHtml(c)}</textarea>
 
             <div class="mm-textarea-meta">
-              <span id="mmQnaCount">0</span><span>/5000</span>
+              <span id="mmQnaCount">0</span><span>/3000</span>
             </div>
           </div>
           <div class="mm-field-error" id="mmQnaErr" aria-live="polite"></div>
@@ -134,9 +137,7 @@ function bindOnce() {
     if (!body) return;
 
     const qid = String(form.getAttribute("data-question-id") || "").trim();
-    const content = String(
-      body.querySelector("#mmQnaContent")?.value ?? ""
-    ).trim();
+    const content = String(body.querySelector("#mmQnaContent")?.value ?? "").trim();
 
     if (!validate(content, body)) return;
 
@@ -165,8 +166,8 @@ function validate(content, root) {
     setError("내용은 필수다", root);
     return false;
   }
-  if (content.length > 5000) {
-    setError("내용은 5000자 이하여야 한다", root);
+  if (content.length > 3000) {
+    setError("내용은 3000자 이하여야 한다", root);
     return false;
   }
   return true;
