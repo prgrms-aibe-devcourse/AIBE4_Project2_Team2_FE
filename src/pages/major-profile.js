@@ -18,6 +18,12 @@ function getStatusDisplay(status) {
   }
 }
 
+const pageState = {
+  interviews: 0,
+  review: 0,
+  qna: 0,
+};
+
 export async function renderMajorProfile(root) {
   const session = getSession();
   const user = session?.user;
@@ -61,18 +67,23 @@ export async function renderMajorProfile(root) {
       <button class="mj-tab ${
         isAccepted ? "is-active" : "is-disabled"
       }" data-tab="profile">내 프로필</button>
-      <button class="mj-tab ${
-        !isAccepted ? "is-active" : ""
-      }" data-tab="request">인증 현황</button>
+
       <button class="mj-tab ${
         isAccepted ? "" : "is-disabled"
       }" data-tab="interviews">받은 인터뷰</button>
+
       <button class="mj-tab ${
         isAccepted ? "" : "is-disabled"
       }" data-tab="qna">Q&A 관리</button>
+
       <button class="mj-tab ${
         isAccepted ? "" : "is-disabled"
-      }" data-tab="review">리뷰</button>
+      }" data-tab="review">인터뷰 후기</button>
+
+      <button class="mj-tab ${
+        !isAccepted ? "is-active" : ""
+      }" data-tab="request">인증 현황</button>
+
     </nav>
 
     <div id="contentArea" class="mj-content-wrapper"></div>
@@ -86,7 +97,6 @@ export async function renderMajorProfile(root) {
     tab.onclick = async () => {
       const target = tab.dataset.tab;
 
-      // [핵심 로직] 인증된 경우만 프로필 탭 접근 허용
       const protectedTabs = ["profile", "interviews", "qna", "review"];
       if (protectedTabs.includes(target) && !isAccepted) {
         alert("전공자 인증이 완료된 후에 이용 가능합니다.");
@@ -116,8 +126,16 @@ export async function renderMajorProfile(root) {
   );
 }
 
-async function loadTabData(tab, container, user) {
+async function loadTabData(tab, container, user, isMore = false) {
   try {
+    const size = 10;
+    // 더보기 클릭 시 해당 탭의 페이지 번호 증가
+    if (isMore) pageState[tab]++;
+    else pageState[tab] = 0; // 탭 전환 시 초기화
+
+    const page = isMore ? pageState[tab] + 1 : 0;
+    const pageParam = `page=${page}&size=10`;
+
     if (tab === "profile") {
       const res = await api.get("/major-profiles/me");
       if (res.success && res.data) renderViewMode(container, res.data, user);
@@ -125,17 +143,36 @@ async function loadTabData(tab, container, user) {
     } else if (tab === "request") {
       const res = await api.get("/major-requests/me");
       renderRequestDetail(container, res.data);
-    } else if (tab === "interviews") {
-      const res = await api.get("/members/me/interviews/received");
-      renderReceivedInterviews(container, res.data || []);
-    } else if (tab === "review") {
-      const res = await api.get(`/members/me/reviews/received`);
-      renderReceivedReviews(container, res.data || []);
     } else {
-      container.innerHTML = `<div class="mj-empty-box">준비 중인 서비스입니다.</div>`;
+      // 리스트형 탭 공통 처리 (interviews, review, qna)
+      const endpointMap = {
+        interviews: "/members/me/interviews/received",
+        review: "/members/me/reviews/received",
+        qna: "/members/me/questions/received",
+      };
+
+      const res = await api.get(`${endpointMap[tab]}?${pageParam}`);
+
+      const renderMap = {
+        interviews: renderReceivedInterviews,
+        review: renderReceivedReviews,
+        qna: renderMajorQnaList,
+      };
+
+      renderMap[tab](
+        container,
+        {
+          items: res.data,
+          meta: res.meta,
+        },
+        user,
+        isMore
+      );
     }
   } catch (err) {
-    container.innerHTML = `<div class="mj-error">데이터를 불러오지 못했습니다.</div>`;
+    console.error("데이터 로드 에러:", err);
+    if (!isMore)
+      container.innerHTML = `<div class="mj-error">데이터를 불러오지 못했습니다.</div>`;
   }
 }
 
@@ -455,27 +492,33 @@ function renderRequestDetail(container, request) {
   }
 }
 
-function renderReceivedInterviews(container, interviews) {
-  if (!interviews || interviews.length === 0) {
-    container.innerHTML = `
-      <div class="mj-card mj-empty-card">
-        <p class="mj-empty-msg">아직 들어온 인터뷰 신청이 없습니다.</p>
-      </div>`;
-    return;
-  }
+function renderReceivedInterviews(container, pageData, user, isMore = false) {
+  const items = pageData?.items || []; // res.data 부분
+  const meta = pageData?.meta || {}; // res.meta 부분
+  const totalCount = meta.totalElements || 0;
+  const isLast = meta.last;
 
-  container.innerHTML = `
+  if (!isMore) {
+    if (items.length === 0) {
+      container.innerHTML = `<div class="mj-card mj-empty-card"><p>신청 내역이 없습니다.</p></div>`;
+      return;
+    }
+
+    container.innerHTML = `
     <div class="mj-interview-list">
-      <div class="mj-list-header" style="margin-bottom: 16px;">
-        <span class="mj-list-count">나에게 온 요청 총 <strong>${interviews.length}</strong>건</span>
+      <div class="mj-list-header">
+        <span class="mj-list-count">나에게 온 요청 총 <strong>${totalCount}</strong>건</span>
       </div>
       <div id="interviewItems"></div>
+      <div id="moreBtnArea" class="mj-more-area" style="text-align:center; margin-top:20px;"></div>
     </div>
   `;
+  }
 
   const listArea = container.querySelector("#interviewItems");
+  const moreBtnArea = container.querySelector("#moreBtnArea");
 
-  interviews.forEach((item) => {
+  items.forEach((item) => {
     const { status, createdAt, interview, student } = item;
     const card = document.createElement("div");
     card.className = "mj-card mj-card--interview";
@@ -575,6 +618,15 @@ function renderReceivedInterviews(container, interviews) {
 
     listArea.appendChild(card);
   });
+
+  moreBtnArea.innerHTML = ""; // 기존 버튼 제거
+  if (!isLast) {
+    const moreBtn = document.createElement("button");
+    moreBtn.className = "mj-btn mj-btn--ghost";
+    moreBtn.textContent = "질문 더보기 ↓";
+    moreBtn.onclick = () => loadTabData("interviews", container, user, true);
+    moreBtnArea.appendChild(moreBtn);
+  }
 }
 
 // 인터뷰 상태 변경 처리 함수 (메시지 인자 추가)
@@ -601,7 +653,7 @@ async function handleInterviewStatus(interviewId, newStatus, message = "") {
         const res = await api.patch(
           `/interviews/${interviewId}/${statusMap[newStatus]}`,
           {
-            majorMessage: message,
+            message: message,
           }
         );
 
@@ -626,27 +678,33 @@ async function handleInterviewStatus(interviewId, newStatus, message = "") {
   );
 }
 
-function renderReceivedReviews(container, reviews) {
-  if (!reviews || reviews.length === 0) {
+function renderReceivedReviews(container, pageData, user, isMore = false) {
+  const items = pageData?.items || []; // res.data 부분
+  const meta = pageData?.meta || {}; // res.meta 부분
+  const totalCount = meta.totalElements || 0;
+  const isLast = meta.last;
+
+  if (!isMore) {
     container.innerHTML = `
-      <div class="mj-card mj-empty-card">
-        <p class="mj-empty-msg">아직 작성된 인터뷰 리뷰가 없습니다.</p>
-      </div>`;
+    <div class="mj-review-list">
+      <div class="mj-list-header">
+        <span class="mj-list-count">학생들의 소중한 후기 <strong>${totalCount}</strong>건</span>
+      </div>
+      <div id="reviewItems"></div>
+      <div id="moreBtnArea" class="mj-more-area" style="text-align:center; margin-top:20px;"></div>
+    </div>
+  `;
+  }
+
+  if (items.length === 0) {
+    container.innerHTML = `<div class="mj-card mj-empty-card"><p>후기가 없습니다.</p></div>`;
     return;
   }
 
-  container.innerHTML = `
-    <div class="mj-review-list">
-      <div class="mj-list-header" style="margin-bottom: 16px;">
-        <span class="mj-list-count">학생들의 소중한 후기 <strong>${reviews.length}</strong>건</span>
-      </div>
-      <div id="reviewItems"></div>
-    </div>
-  `;
-
   const listArea = container.querySelector("#reviewItems");
+  const moreBtnArea = container.querySelector("#moreBtnArea");
 
-  reviews.forEach((item) => {
+  items.forEach((item) => {
     const { student, review, createdAt } = item;
     const card = document.createElement("div");
     card.className = "mj-card mj-card--review";
@@ -666,7 +724,6 @@ function renderReceivedReviews(container, reviews) {
             <div class="mj-student-avatar" style="background-image: url('${
               student.profileImageUrl || ""
             }');">
-              ${!student.profileImageUrl ? "👤" : ""}
             </div>
             <div class="mj-student-meta">
               <span class="mj-student-nick">${student.nickname}</span>
@@ -689,4 +746,178 @@ function renderReceivedReviews(container, reviews) {
 
     listArea.appendChild(card);
   });
+
+  moreBtnArea.innerHTML = ""; // 기존 버튼 제거
+  if (!isLast) {
+    const moreBtn = document.createElement("button");
+    moreBtn.className = "mj-btn mj-btn--ghost";
+    moreBtn.textContent = "질문 더보기 ↓";
+    moreBtn.onclick = () => loadTabData("review", container, user, true);
+    moreBtnArea.appendChild(moreBtn);
+  }
+}
+
+function renderMajorQnaList(container, pageData, user, isMore = false) {
+  const items = pageData?.items || []; // res.data 부분
+  const meta = pageData?.meta || {}; // res.meta 부분
+  const totalCount = meta.totalElements || 0;
+  const isLast = meta.last;
+
+  if (!isMore) {
+    if (!items || items.length === 0) {
+      container.innerHTML = `
+      <div class="mj-card mj-empty-card">
+        <p class="mj-empty-msg">아직 등록된 질문이 없습니다.</p>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+    <div class="mj-qna-list">
+      <div class="mj-list-header">
+        <span class="mj-list-count">받은 질문 총 <strong>${totalCount}</strong>건</span>
+      </div>
+      <div id="qnaItems"></div>
+      <div id="moreBtnArea" class="mj-more-area" style="text-align:center; margin-top:20px;"></div>
+    </div>
+  `;
+  }
+
+  const listArea = container.querySelector("#qnaItems");
+  const moreBtnArea = container.querySelector("#moreBtnArea");
+
+  items.forEach((item) => {
+    // 백엔드 Record 필드명과 일치시킴
+    const {
+      questionId,
+      studentMemberId,
+      studentNickname,
+      content,
+      hasAnswer,
+      answerContent,
+      createdAt,
+    } = item;
+
+    const isAnswered = hasAnswer; // hasAnswer 필드 활용
+
+    const card = document.createElement("div");
+    card.className = `mj-card mj-card--qna ${isAnswered ? "is-answered" : ""}`;
+
+    card.innerHTML = `
+      <div class="mj-qna-item">
+        <div class="mj-item-top">
+          <span class="mj-info__badge ${
+            isAnswered ? "mj-badge--accepted" : "mj-badge--pending"
+          }">
+            ${isAnswered ? "답변완료" : "답변대기"}
+          </span>
+          <span class="mj-item-date">${new Date(
+            createdAt
+          ).toLocaleDateString()}</span>
+        </div>
+        
+        <div class="mj-qna-body">
+          <div class="mj-qna-question">
+            <span class="mj-qna-label Q">Q</span>
+            <div class="mj-qna-main">
+              <p class="mj-qna-student"><strong>${studentNickname}</strong> 학생의 질문</p>
+              <p class="mj-qna-text">${content.replace(/\n/g, "<br>")}</p>
+            </div>
+          </div>
+
+          <div class="mj-qna-answer" id="answerArea-${questionId}">
+            ${
+              isAnswered
+                ? `
+                <span class="mj-qna-label A">A</span>
+                <div class="mj-qna-main">
+                  <p class="mj-qna-text">${
+                    answerContent ? answerContent.replace(/\n/g, "<br>") : ""
+                  }</p>
+                  <button class="mj-btn-text" id="editAnsBtn-${questionId}">답변 수정</button>
+                </div>`
+                : `
+                <button class="mj-btn mj-btn--primary mj-btn--sm" id="writeAnsBtn-${questionId}">답변 작성하기</button>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
+
+    listArea.appendChild(card);
+
+    // 이벤트 바인딩 시 questionId 사용
+    const actionBtn = isAnswered
+      ? card.querySelector(`#editAnsBtn-${questionId}`)
+      : card.querySelector(`#writeAnsBtn-${questionId}`);
+
+    actionBtn.onclick = (e) => {
+      e.stopPropagation();
+      renderAnswerForm(questionId, isAnswered ? answerContent : "", container);
+    };
+  });
+
+  moreBtnArea.innerHTML = ""; // 기존 버튼 제거
+  if (!isLast) {
+    const moreBtn = document.createElement("button");
+    moreBtn.className = "mj-btn mj-btn--ghost";
+    moreBtn.textContent = "질문 더보기 ↓";
+    moreBtn.onclick = () => loadTabData("qna", container, user, true);
+    moreBtnArea.appendChild(moreBtn);
+  }
+}
+
+function renderAnswerForm(qnaId, existingAnswer, container) {
+  const answerArea = container.querySelector(`#answerArea-${qnaId}`);
+  const isEdit = !!existingAnswer;
+
+  answerArea.innerHTML = `
+    <div class="mj-answer-form">
+      <textarea class="mj-textarea" id="ansInput-${qnaId}" rows="4" placeholder="답변 내용을 입력해주세요.">${existingAnswer}</textarea>
+      <div class="mj-form-actions">
+        <button class="mj-btn mj-btn--ghost mj-btn--sm" id="cancelAnsBtn-${qnaId}">취소</button>
+        <button class="mj-btn mj-btn--save mj-btn--sm" id="saveAnsBtn-${qnaId}">${
+    isEdit ? "수정완료" : "답변등록"
+  }</button>
+      </div>
+    </div>
+  `;
+
+  // 취소 버튼
+  answerArea.querySelector(`#cancelAnsBtn-${qnaId}`).onclick = () => {
+    // 탭을 다시 로드하여 원래 상태로 복구
+    const qnaTab = document.querySelector('.mj-tab[data-tab="qna"]');
+    qnaTab.click();
+  };
+
+  // 등록/수정 버튼
+  answerArea.querySelector(`#saveAnsBtn-${qnaId}`).onclick = async () => {
+    const content = document.getElementById(`ansInput-${qnaId}`).value.trim();
+    if (!content) {
+      alert("답변 내용을 입력해주세요.");
+      return;
+    }
+
+    await withOverlayLoading(
+      async () => {
+        try {
+          // 백엔드 엔드포인트에 맞춰 POST(등록) 또는 PATCH/PUT(수정) 처리
+          const res = await api.post(`/qna/${qnaId}/answer`, { content });
+          if (res.success) {
+            showOverlayCheck({
+              text: "답변이 저장되었습니다.",
+              durationMs: 800,
+            });
+            setTimeout(
+              () => document.querySelector('.mj-tab[data-tab="qna"]').click(),
+              800
+            );
+          }
+        } catch (err) {
+          alert("답변 저장 중 오류가 발생했습니다.");
+        }
+      },
+      { text: "답변을 저장 중입니다..." }
+    );
+  };
 }

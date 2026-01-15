@@ -293,3 +293,52 @@
     justify-content: flex-start;
   }
 }
+
+/* Q&A 전용 스타일 예시 */
+.mj-qna-row {
+  border-left: 4px solid #e2e8f0;
+  padding-left: 1rem;
+}
+.mj-qna-answer-box {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+.mj-qna-a-label {
+  color: #3b82f6;
+  font-weight: bold;
+  margin-bottom: 5px;
+  display: block;
+}
+.mj-qna-pending {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  font-style: italic;
+}
+/* Q&A 전용 스타일 예시 */
+.mj-qna-row {
+  border-left: 4px solid #e2e8f0;
+  padding-left: 1rem;
+}
+.mj-qna-answer-box {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+.mj-qna-a-label {
+  color: #3b82f6;
+  font-weight: bold;
+  margin-bottom: 5px;
+  display: block;
+}
+.mj-qna-pending {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  font-style: italic;
+}

@@ -920,3 +920,23 @@
   color: var(--dark-text);
   white-space: pre-wrap; /* 줄바꿈 허용 */
 }
+
+.mj-qna-label {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+.mj-qna-label.Q { color: var(--primary-color); }
+.mj-qna-label.A { color: var(--pastel-green-strong); }
+
+.mj-qna-question, .mj-qna-answer {
+  display: flex;
+  margin-bottom: 16px;
+}
+.mj-qna-answer {
+  padding-top: 16px;
+  border-top: 1px dashed #eee;
+}
+.mj-qna-main { flex: 1; }
+.mj-btn--sm { padding: 6px 12px; font-size: 0.85rem; }

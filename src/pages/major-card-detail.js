@@ -4,6 +4,7 @@ import {
   QNA_BY_PROFILE,
 } from "../data/profileDetailData.js";
 import { api } from "../services/api.js";
+import { getSession } from "../auth/auth.js";
 import {
   showOverlayCheck,
   withOverlayLoading, // 추가
@@ -226,23 +227,40 @@ export async function renderProfileDetail(root, { id }) {
   }
 
   function renderBottomCard() {
+    const session = getSession();
+    const currentUser = session?.user;
+
+    const isOwner =
+      currentUser && String(currentUser.id) === String(profile.memberId);
+
     const card = document.createElement("section");
     card.className = "card pd-bottom";
-
     card.innerHTML = `
+    <div class="pd-tabs-container">
       <div class="pd-tabs">
         <button class="pd-tab active" type="button" data-tab="review">후기</button>
         <button class="pd-tab" type="button" data-tab="qna">Q&amp;A</button>
       </div>
-      <div class="pd-bottom-body">
-        <div class="pd-list-wrap" id="pdList"></div>
-        <div class="pagination" id="pdPager"></div>
+      <div id="qnaActionArea" style="display: none;">
+        ${
+          !isOwner
+            ? `<button class="mj-btn-sm mj-btn--primary" id="askQuestionBtn">질문하기</button>`
+            : `<span class="mj-owner-tag">내 프로필 Q&A 관리</span>`
+        }
       </div>
-    `;
+    </div>
+    <div class="pd-bottom-body">
+      <div class="pd-list-wrap" id="pdList"></div>
+      <div class="pagination" id="pdPager"></div>
+    </div>
+  `;
 
     card.addEventListener("click", (e) => {
       const tabBtn = e.target.closest("[data-tab]");
       if (tabBtn) {
+        const tab = tabBtn.getAttribute("data-tab");
+        wrap.querySelector("#qnaActionArea").style.display =
+          tab === "qna" ? "block" : "none";
         state.tab = tabBtn.getAttribute("data-tab");
         state.page = 1;
         card
@@ -251,6 +269,10 @@ export async function renderProfileDetail(root, { id }) {
         tabBtn.classList.add("active");
         renderBottom();
         return;
+      }
+
+      if (e.target.id === "askQuestionBtn") {
+        openQuestionForm(profile.memberId);
       }
 
       const pageBtn = e.target.closest("[data-page]");
@@ -280,41 +302,55 @@ export async function renderProfileDetail(root, { id }) {
     await withOverlayLoading(
       async () => {
         try {
-          if (state.tab === "review") {
-            const response = await api.get(
-              `/members/${profile.memberId}/reviews/received?page=${
-                state.page - 1
-              }&size=${PAGE_SIZE}`
+          const endpoint =
+            state.tab === "review"
+              ? `/members/${profile.memberId}/reviews/received`
+              : `/members/${profile.memberId}/questions/received`;
+
+          const response = await api.get(
+            `${endpoint}?page=${state.page - 1}&size=${PAGE_SIZE}`
+          );
+
+          if (response?.success) {
+            const items = response.data || [];
+            // 페이징 정보 추출 (백엔드 응답 구조에 따라 meta 또는 direct 필드 사용)
+            const totalElements =
+              response.meta?.totalElements || response.totalElements || 0;
+            const totalPages = Math.max(
+              1,
+              Math.ceil(totalElements / PAGE_SIZE)
             );
 
-            if (response?.success) {
-              const reviews = response.data;
-              const totalElements = response.totalElements || 0;
-              const totalPages = Math.max(
-                1,
-                Math.ceil(totalElements / PAGE_SIZE)
-              );
+            listEl.innerHTML = "";
 
-              listEl.innerHTML = "";
-              if (!reviews || reviews.length === 0) {
-                listEl.innerHTML = `<div class="empty">아직 작성된 후기가 없습니다.</div>`;
-              } else {
-                reviews.forEach((rev) =>
-                  listEl.appendChild(renderReviewItem(rev))
-                );
-              }
-              renderPagination(pagerEl, totalPages);
+            if (items.length === 0) {
+              const msg =
+                state.tab === "review"
+                  ? "아직 작성된 후기가 없습니다."
+                  : "아직 등록된 질문이 없습니다.";
+              listEl.innerHTML = `<div class="empty">${msg}</div>`;
+            } else {
+              items.forEach((item) => {
+                const row =
+                  state.tab === "review"
+                    ? renderReviewItem(item)
+                    : renderQnaItem(item);
+                listEl.appendChild(row);
+              });
             }
-          } else {
-            listEl.innerHTML = `<div class="empty">Q&A 서비스 준비 중입니다.</div>`;
-            pagerEl.innerHTML = "";
+            renderPagination(pagerEl, totalPages);
           }
         } catch (e) {
           console.error("데이터 로드 실패:", e);
           listEl.innerHTML = `<div class="mj-error">데이터를 불러오지 못했습니다.</div>`;
         }
       },
-      { text: "후기 데이터를 불러오는 중..." }
+      {
+        text:
+          state.tab === "review"
+            ? "후기를 불러오는 중..."
+            : "질문을 불러오는 중...",
+      }
     );
   }
 
@@ -364,24 +400,121 @@ export async function renderProfileDetail(root, { id }) {
     return row;
   }
 
-  function renderQna(q) {
+  function renderQnaItem(item) {
+    const session = getSession();
+    const isOwner =
+      session?.user && String(session.user.id) === String(profile.memberId);
+    const {
+      questionId,
+      studentNickname,
+      content,
+      hasAnswer,
+      answerContent,
+      createdAt,
+    } = item;
+
     const row = document.createElement("div");
-    row.className = "pd-item";
+    row.className = "pd-item mj-qna-row";
 
     row.innerHTML = `
-      <div class="pd-item-top">
-        <div>
-          <div class="pd-item-title">${escapeHtml(q.author)}</div>
-          <div class="pd-item-sub">${escapeHtml(q.question)}</div>
-        </div>
-        <div class="pd-date">${escapeHtml(q.date)}</div>
+    <div class="pd-item-top">
+      <div class="mj-qna-info">
+        <span class="pd-item-title">Q. ${escapeHtml(studentNickname)}</span>
       </div>
-      <div class="pd-item-content">${escapeHtml(
-        q.answer || "답변 대기 중"
-      )}</div>
-    `;
+      <div class="pd-date">${new Date(createdAt).toLocaleDateString()}</div>
+    </div>
+    <div class="pd-item-content">${escapeHtml(content).replace(
+      /\n/g,
+      "<br>"
+    )}</div>
+    
+    <div class="mj-answer-area" id="ans-${questionId}">
+      ${
+        hasAnswer
+          ? `
+        <div class="mj-qna-answer-box">
+          <div class="mj-qna-a-label">A. 내 답변</div>
+          <div class="mj-qna-answer-content">${escapeHtml(
+            answerContent
+          ).replace(/\n/g, "<br>")}</div>
+          ${
+            isOwner
+              ? `<button class="mj-btn-text edit-ans" data-id="${questionId}">답변 수정</button>`
+              : ""
+          }
+        </div>
+      `
+          : `
+        ${
+          isOwner
+            ? `<button class="mj-btn mj-btn--sm mj-btn--ghost write-ans" data-id="${questionId}">답변 작성하기</button>`
+            : `<div class="mj-qna-pending">답변을 기다리는 중입니다.</div>`
+        }
+      `
+      }
+    </div>
+  `;
+
+    // 답변 작성/수정 버튼 이벤트 바인딩
+    const actionBtn = row.querySelector(".write-ans, .edit-ans");
+    if (actionBtn) {
+      actionBtn.onclick = () =>
+        renderAnswerInput(questionId, hasAnswer ? answerContent : "", row);
+    }
 
     return row;
+  }
+
+  function renderAnswerInput(qId, existing, parentRow) {
+    const area = parentRow.querySelector(`#ans-${qId}`);
+    area.innerHTML = `
+    <div class="mj-answer-edit-form">
+      <textarea class="mj-textarea" id="input-${qId}" rows="3">${existing}</textarea>
+      <div class="mj-btn-group">
+        <button class="mj-btn-sm mj-btn--ghost" onclick="renderBottom()">취소</button>
+        <button class="mj-btn-sm mj-btn--primary" id="save-${qId}">저장</button>
+      </div>
+    </div>
+  `;
+
+    area.querySelector(`#save-${qId}`).onclick = async () => {
+      const content = area.querySelector(`#input-${qId}`).value;
+      await withOverlayLoading(async () => {
+        try {
+          const res = await api.post(`/questions/${questionId}/answer`, {
+            content,
+          });
+          if (res.success) {
+            showOverlayCheck({ text: "답변이 저장되었습니다." });
+            renderBottom();
+          }
+        } catch (e) {
+          alert("답변 저장 실패");
+        }
+      });
+    };
+  }
+
+  function openQuestionForm(majorId) {
+    const content = prompt("전공자에게 궁금한 점을 남겨주세요 (최대 500자)");
+    if (!content || content.trim() === "") return;
+
+    withOverlayLoading(
+      async () => {
+        try {
+          const res = await api.post(`/majors/${majorId}/questions`, {
+            content,
+          });
+          if (res.success) {
+            showOverlayCheck({ text: "질문이 등록되었습니다." });
+            renderBottom(); // 목록 새로고침
+          }
+        } catch (e) {
+          alert("질문 등록에 실패했습니다.");
+        }
+      },
+      { text: "질문 등록 중..." }
+    );
   }
 
   function renderStars(n) {
