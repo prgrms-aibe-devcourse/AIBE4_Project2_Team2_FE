@@ -2,18 +2,26 @@
 import { escapeHtml, escapeAttr } from "../utils/dom.js";
 
 export function renderMyQuestionItem(item) {
-  const questionId = String(item?.questionId ?? "").trim();
+  // questionId: 루트 or questionBody 둘 다 대응
+  const questionId = String(item?.questionId ?? item?.question?.questionId ?? "").trim();
 
-  const question = safeText(item?.questionContent, "-");
+  // 질문 내용: QnaResponse 기준(item.question.content) 우선
+  const question = safeText(
+    item?.question?.content ?? item?.questionContent ?? item?.content,
+    "-"
+  );
+
   const hasAnswer = Boolean(item?.hasAnswer);
 
-  const qCreatedRaw = item?.createdAt || "";
-  const qUpdatedRaw = item?.updatedAt || "";
+  // 질문 날짜: QnaResponse 기준(item.question.createdAt/updatedAt) 우선
+  const qCreatedRaw = item?.question?.createdAt ?? item?.createdAt ?? "";
+  const qUpdatedRaw = item?.question?.updatedAt ?? item?.updatedAt ?? "";
   const qCreatedDate = formatDateOnly(qCreatedRaw);
   const qUpdatedDate = formatDateOnly(qUpdatedRaw);
   const qEdited = hasMeaningfulUpdate(qCreatedRaw, qUpdatedRaw);
 
-  const ans = item?.answer || null;
+  // 답변: QnaResponse 기준(item.answer.*) 우선, 이전 포맷도 호환
+  const ans = item?.answer ?? item?.answerBody ?? null;
   const answerText = safeText(ans?.content, "");
   const aCreatedRaw = ans?.createdAt || "";
   const aUpdatedRaw = ans?.updatedAt || "";
@@ -42,8 +50,6 @@ export function renderMyQuestionItem(item) {
       })
     : "";
 
-  // short/full은 항상 렌더링하고, 버튼은 기본 hidden 처리
-  // 렌더 후 overflow 측정해서 필요한 경우에만 버튼을 표시
   const qShort = question;
   const qFull = question;
 
@@ -67,12 +73,8 @@ export function renderMyQuestionItem(item) {
         }
 
         <div class="mypage-qna-text" data-no-detail="true">
-          <span class="mypage-qna-short" data-part="q-short">${escapeHtml(
-            qShort
-          )}</span>
-          <span class="mypage-qna-full" data-part="q-full" hidden>${escapeHtml(
-            qFull
-          )}</span>
+          <span class="mypage-qna-short" data-part="q-short">${escapeHtml(qShort)}</span>
+          <span class="mypage-qna-full" data-part="q-full" hidden>${escapeHtml(qFull)}</span>
           <button
             type="button"
             class="mypage-qna-more"
@@ -127,12 +129,8 @@ export function renderMyQuestionItem(item) {
           answerText
             ? `
               <div class="mypage-qna-text" data-no-detail="true">
-                <span class="mypage-qna-short" data-part="a-short">${escapeHtml(
-                  aShort
-                )}</span>
-                <span class="mypage-qna-full" data-part="a-full" hidden>${escapeHtml(
-                  aFull
-                )}</span>
+                <span class="mypage-qna-short" data-part="a-short">${escapeHtml(aShort)}</span>
+                <span class="mypage-qna-full" data-part="a-full" hidden>${escapeHtml(aFull)}</span>
                 <button
                   type="button"
                   class="mypage-qna-more"
@@ -151,13 +149,7 @@ export function renderMyQuestionItem(item) {
   `;
 }
 
-function buildDatesLine({
-  primaryLabel,
-  primaryValue,
-  edited,
-  updatedLabel,
-  updatedValue,
-}) {
+function buildDatesLine({ primaryLabel, primaryValue, edited, updatedLabel, updatedValue }) {
   const p = String(primaryValue || "").trim();
   if (!p || p === "-") return "";
 
@@ -170,21 +162,15 @@ function buildDatesLine({
     }
   }
 
-  return parts.join(
-    `<span class="mypage-qna-dot" aria-hidden="true">·</span>`
-  );
+  return parts.join(`<span class="mypage-qna-dot" aria-hidden="true">·</span>`);
 }
 
 function renderChipLabel(label) {
-  return `<span class="mypage-qna-date-chip" data-no-detail="true">${escapeHtml(
-    label
-  )}</span>`;
+  return `<span class="mypage-qna-date-chip" data-no-detail="true">${escapeHtml(label)}</span>`;
 }
 
 function renderDateValue(value) {
-  return `<span class="mypage-qna-date-val" data-no-detail="true">${escapeHtml(
-    value
-  )}</span>`;
+  return `<span class="mypage-qna-date-val" data-no-detail="true">${escapeHtml(value)}</span>`;
 }
 
 function safeText(v, fallback) {

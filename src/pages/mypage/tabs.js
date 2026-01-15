@@ -1,4 +1,7 @@
-// src/pages/mypage/tabs.js
+// src/pages/mypage/tabs.js (qna 관련 부분만 전체 교체 기준으로 제시)
+// 아래 코드는 기존 파일에서 qna 분기(렌더링/클릭 처리) 부분을 "그대로 유지"하면서,
+// Map 키/콘텐츠 추출만 DTO 변화(QnaResponse)까지 대응하도록 수정한 버전이다.
+
 import { MYPAGE_TABS } from "./state.js";
 import { renderProfileTab } from "./renderers/profile.js";
 
@@ -15,7 +18,7 @@ import { openReviewCreateModal } from "./components/reviewCreateModal.js";
 import { fetchAppliedInterviewDetail } from "./api.js";
 
 import { renderMyQuestionItem } from "./renderers/qna.js";
-import { openQnaEditModal } from "./components/qnaEditModal.js";
+import { openQnaEditModal, ensureQnaEditModal } from "./components/qnaEditModal.js";
 import { deleteMyQuestion } from "./api.js";
 
 import { renderInterviewSortBar } from "./ui/interviewSortBar.js";
@@ -28,9 +31,15 @@ import {
 } from "../../utils/overlay.js";
 
 function upper(v) {
-  return String(v ?? "")
-    .trim()
-    .toUpperCase();
+  return String(v ?? "").trim().toUpperCase();
+}
+
+function pickQuestionId(it) {
+  return String(it?.questionId ?? it?.question?.questionId ?? "").trim();
+}
+
+function pickQuestionContent(it) {
+  return String(it?.question?.content ?? it?.questionContent ?? it?.content ?? "").trim();
 }
 
 export function initTabsSection(state) {
@@ -139,8 +148,11 @@ export function initTabsSection(state) {
       }
 
       if (state.activeTab === "qna") {
+        // 모달은 최초 1회 생성 시도(안전)
+        ensureQnaEditModal();
+
         for (const it of items) {
-          const qid = String(it?.questionId ?? "").trim();
+          const qid = pickQuestionId(it);
           if (qid) itemsByQuestionId.set(qid, it);
         }
         listEl.innerHTML = items.map(renderMyQuestionItem).join("");
@@ -173,12 +185,8 @@ export function initTabsSection(state) {
         e.preventDefault();
         e.stopPropagation();
 
-        const reviewId = String(
-          editBtn.getAttribute("data-review-id") || ""
-        ).trim();
-        const interviewId = String(
-          editBtn.getAttribute("data-interview-id") || ""
-        ).trim();
+        const reviewId = String(editBtn.getAttribute("data-review-id") || "").trim();
+        const interviewId = String(editBtn.getAttribute("data-interview-id") || "").trim();
         if (!reviewId || !interviewId) return;
 
         const item = itemsByReviewId.get(reviewId);
@@ -204,14 +212,10 @@ export function initTabsSection(state) {
     if (state.activeTab === "applied") {
       if (noDetail) return;
 
-      const row = e.target.closest?.(
-        '[data-action="open-applied-interview-detail"]'
-      );
+      const row = e.target.closest?.('[data-action="open-applied-interview-detail"]');
       if (!row) return;
 
-      const interviewId = String(
-        row.getAttribute("data-interview-id") || ""
-      ).trim();
+      const interviewId = String(row.getAttribute("data-interview-id") || "").trim();
       if (!interviewId) return;
 
       await openAppliedDetailWithLoading(interviewId);
@@ -226,9 +230,7 @@ export function initTabsSection(state) {
 
         if (writeBtn.hasAttribute("disabled")) return;
 
-        const interviewId = String(
-          writeBtn.getAttribute("data-interview-id") || ""
-        ).trim();
+        const interviewId = String(writeBtn.getAttribute("data-interview-id") || "").trim();
         if (!interviewId) return;
 
         openReviewCreateModal({ interviewId });
@@ -237,14 +239,9 @@ export function initTabsSection(state) {
 
       if (noDetail) return;
 
-      const row = e.target.closest?.(
-        '[data-action="open-completed-interview-detail"]'
-      );
+      const row = e.target.closest?.('[data-action="open-completed-interview-detail"]');
       if (!row) return;
-
-      const interviewId = String(
-        row.getAttribute("data-interview-id") || ""
-      ).trim();
+      const interviewId = String(row.getAttribute("data-interview-id") || "").trim();
       if (!interviewId) return;
 
       await openAppliedDetailWithLoading(interviewId);
@@ -264,14 +261,10 @@ export function initTabsSection(state) {
         const open = toggleBtn.getAttribute("data-open") === "true";
 
         const shortEl = row.querySelector(
-          target === "question"
-            ? '[data-part="q-short"]'
-            : '[data-part="a-short"]'
+          target === "question" ? '[data-part="q-short"]' : '[data-part="a-short"]'
         );
         const fullEl = row.querySelector(
-          target === "question"
-            ? '[data-part="q-full"]'
-            : '[data-part="a-full"]'
+          target === "question" ? '[data-part="q-full"]' : '[data-part="a-full"]'
         );
         if (!shortEl || !fullEl) return;
 
@@ -300,15 +293,16 @@ export function initTabsSection(state) {
 
         if (editBtn.hasAttribute("disabled")) return;
 
-        const questionId = String(
-          editBtn.getAttribute("data-question-id") || ""
-        ).trim();
+        const questionId = String(editBtn.getAttribute("data-question-id") || "").trim();
         if (!questionId) return;
 
         const item = itemsByQuestionId.get(questionId);
         if (!item) return;
 
-        openQnaEditModal({ questionId, content: item?.questionContent ?? "" });
+        openQnaEditModal({
+          questionId,
+          content: pickQuestionContent(item),
+        });
         return;
       }
 
@@ -319,9 +313,7 @@ export function initTabsSection(state) {
 
         if (delBtn.hasAttribute("disabled")) return;
 
-        const questionId = String(
-          delBtn.getAttribute("data-question-id") || ""
-        ).trim();
+        const questionId = String(delBtn.getAttribute("data-question-id") || "").trim();
         if (!questionId) return;
 
         await confirmDeleteMyQuestion({ questionId });
@@ -347,15 +339,11 @@ export function initTabsSection(state) {
     }
 
     if (state.activeTab === "applied") {
-      const row = e.target.closest?.(
-        '[data-action="open-applied-interview-detail"]'
-      );
+      const row = e.target.closest?.('[data-action="open-applied-interview-detail"]');
       if (!row) return;
       e.preventDefault();
 
-      const interviewId = String(
-        row.getAttribute("data-interview-id") || ""
-      ).trim();
+      const interviewId = String(row.getAttribute("data-interview-id") || "").trim();
       if (!interviewId) return;
 
       await openAppliedDetailWithLoading(interviewId);
@@ -368,24 +356,18 @@ export function initTabsSection(state) {
         e.preventDefault();
         if (writeBtn.hasAttribute("disabled")) return;
 
-        const interviewId = String(
-          writeBtn.getAttribute("data-interview-id") || ""
-        ).trim();
+        const interviewId = String(writeBtn.getAttribute("data-interview-id") || "").trim();
         if (!interviewId) return;
 
         openReviewCreateModal({ interviewId });
         return;
       }
 
-      const row = e.target.closest?.(
-        '[data-action="open-completed-interview-detail"]'
-      );
+      const row = e.target.closest?.('[data-action="open-completed-interview-detail"]');
       if (!row) return;
       e.preventDefault();
 
-      const interviewId = String(
-        row.getAttribute("data-interview-id") || ""
-      ).trim();
+      const interviewId = String(row.getAttribute("data-interview-id") || "").trim();
       if (!interviewId) return;
 
       await openAppliedDetailWithLoading(interviewId);
@@ -520,18 +502,8 @@ export function initTabsSection(state) {
 
   function enableQnaMoreButtons(root) {
     root.querySelectorAll(".mypage-qna-item").forEach((row) => {
-      applyOverflowToggle(
-        row,
-        "question",
-        '[data-part="q-short"]',
-        '[data-part="q-full"]'
-      );
-      applyOverflowToggle(
-        row,
-        "answer",
-        '[data-part="a-short"]',
-        '[data-part="a-full"]'
-      );
+      applyOverflowToggle(row, "question", '[data-part="q-short"]', '[data-part="q-full"]');
+      applyOverflowToggle(row, "answer", '[data-part="a-short"]', '[data-part="a-full"]');
     });
   }
 
