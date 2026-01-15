@@ -1,4 +1,3 @@
-import { navigate } from "../router.js";
 import { api } from "../services/api.js";
 
 export async function renderOAuthCallback(root) {
@@ -23,7 +22,8 @@ export async function renderOAuthCallback(root) {
   if (error) {
     // 에러 타입별 메시지 매핑
     const errorMessages = {
-      email_already_registered: "이미 가입된 이메일입니다. 로컬 계정으로 로그인해주세요.",
+      email_already_registered:
+        "이미 가입된 이메일입니다. 로컬 계정으로 로그인해주세요.",
       email_not_found: "이메일 정보를 가져올 수 없습니다.",
       unsupported_provider: "지원하지 않는 소셜 로그인입니다.",
       username_generation_failed: "계정 생성 중 오류가 발생했습니다.",
