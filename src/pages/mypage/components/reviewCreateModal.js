@@ -1,5 +1,13 @@
 // src/pages/mypage/components/reviewCreateModal.js
-import { escapeHtml, escapeAttr } from "../utils/dom.js";
+/*
+  후기 작성 모달 구성 요소
+  - 모달 DOM 1회 마운트 처리
+  - 별점/내용 입력 UI 렌더링 처리
+  - 이벤트 바인딩 1회 처리
+  - 생성 API 호출 및 이벤트 브로드캐스트 처리
+*/
+
+import { escapeAttr } from "../utils/dom.js";
 import {
   startOverlayLoading,
   endOverlayLoading,
@@ -50,10 +58,7 @@ export function openReviewCreateModal({ interviewId } = {}) {
 
   body.innerHTML = renderCreateForm({ interviewId: safeInterviewId });
 
-  modal.classList.add("is-open");
-  document.body.classList.add("mm-modal-open");
-
-  body.scrollTop = 0;
+  resetBodyScroll(body);
 
   const nextRating = clampInt(
     Number(body.querySelector("#mmCreateRating")?.value),
@@ -64,6 +69,9 @@ export function openReviewCreateModal({ interviewId } = {}) {
   updateCount(body);
   clearError("mmCreateRatingErr", body);
   clearError("mmCreateContentErr", body);
+
+  modal.classList.add("is-open");
+  document.body.classList.add("mm-modal-open");
 }
 
 export function closeReviewCreateModal() {
@@ -73,9 +81,13 @@ export function closeReviewCreateModal() {
 
   modal.classList.remove("is-open");
   document.body.classList.remove("mm-modal-open");
-  if (body) body.scrollTop = 0;
+
+  if (body) resetBodyScroll(body);
 }
 
+/*
+  작성 폼 HTML 생성 처리
+*/
 function renderCreateForm({ interviewId }) {
   return `
     <div class="mm-modal__stack mm-review-edit-stack">
@@ -105,7 +117,7 @@ function renderCreateForm({ interviewId }) {
         <div class="mm-edit-body">
           <div class="mm-textarea-wrap">
             <textarea class="mm-textarea mm-textarea--fixed" id="mmCreateContent" name="content" rows="10"
-              placeholder="후기 내용을 입력한다"
+              placeholder="후기 내용을 입력합니다"
               maxlength="1000"
             ></textarea>
 
@@ -125,6 +137,9 @@ function renderCreateForm({ interviewId }) {
   `;
 }
 
+/*
+  이벤트 바인딩 1회 처리
+*/
 function bindFormOnce() {
   if (bound) return;
   bound = true;
@@ -158,7 +173,6 @@ function bindFormOnce() {
 
       updateStarUI(next, body);
       clearError("mmCreateRatingErr", body);
-      return;
     }
   });
 
@@ -185,9 +199,7 @@ function bindFormOnce() {
     const body = document.getElementById("reviewCreateBody");
     if (!body) return;
 
-    const interviewId = String(
-      form.getAttribute("data-interview-id") || ""
-    ).trim();
+    const interviewId = String(form.getAttribute("data-interview-id") || "").trim();
     if (!interviewId) return;
 
     const rating = clampInt(
@@ -195,9 +207,7 @@ function bindFormOnce() {
       0,
       5
     );
-    const content = String(
-      body.querySelector("#mmCreateContent")?.value ?? ""
-    ).trim();
+    const content = String(body.querySelector("#mmCreateContent")?.value ?? "").trim();
 
     const ok = validate({ rating, content }, body);
     if (!ok) return;
@@ -232,34 +242,43 @@ function bindFormOnce() {
   });
 }
 
+/*
+  클라이언트 입력 검증 처리
+*/
 function validate({ rating, content }, root) {
   let ok = true;
 
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-    setError("mmCreateRatingErr", "평점은 1~5 사이여야 한다", root);
+    setError("mmCreateRatingErr", "평점은 1~5 사이여야 합니다", root);
     ok = false;
   }
 
   if (!content) {
-    setError("mmCreateContentErr", "후기 내용은 필수다", root);
+    setError("mmCreateContentErr", "후기 내용은 필수입니다", root);
     ok = false;
   } else if (content.length > 1000) {
-    setError("mmCreateContentErr", "후기 내용은 1000자 이하여야 한다", root);
+    setError("mmCreateContentErr", "후기 내용은 1000자 이하여야 합니다", root);
     ok = false;
   }
 
   return ok;
 }
 
+/*
+  서버 오류 메시지 반영 처리
+*/
 function applyServerError(errOrRes, root) {
   const msg =
     String(errOrRes?.message ?? errOrRes?.error?.message ?? errOrRes ?? "")
       .replace(/\s+/g, " ")
-      .trim() || "요청에 실패했다";
+      .trim() || "요청에 실패했습니다";
 
   setError("mmCreateContentErr", msg, root);
 }
 
+/*
+  별점 UI 업데이트 처리
+*/
 function updateStarUI(rating, root) {
   const btns = Array.from(root.querySelectorAll(".mm-star-btn"));
   for (const b of btns) {
@@ -270,6 +289,9 @@ function updateStarUI(rating, root) {
   }
 }
 
+/*
+  글자수 카운트 업데이트 처리
+*/
 function updateCount(root) {
   const ta = root.querySelector("#mmCreateContent");
   const countEl = root.querySelector("#mmCreateCount");
@@ -277,6 +299,9 @@ function updateCount(root) {
   countEl.textContent = String(String(ta.value ?? "").length);
 }
 
+/*
+  에러 메시지 설정/해제 처리
+*/
 function setError(id, text, root) {
   const el = root?.querySelector?.(`#${id}`);
   if (!el) return;
@@ -289,8 +314,24 @@ function clearError(id, root) {
   el.textContent = "";
 }
 
+/*
+  정수 범위 클램프 처리
+*/
 function clampInt(v, min, max) {
   const n = Math.trunc(Number(v));
   if (!Number.isFinite(n)) return min;
   return Math.min(max, Math.max(min, n));
+}
+
+/*
+  모달 바디 스크롤 최상단 초기화 처리
+*/
+function resetBodyScroll(body) {
+  if (!body) return;
+  body.scrollTop = 0;
+  body.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  requestAnimationFrame(() => {
+    body.scrollTop = 0;
+    body.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  });
 }

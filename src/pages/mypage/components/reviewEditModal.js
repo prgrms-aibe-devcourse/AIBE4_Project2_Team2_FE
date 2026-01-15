@@ -1,4 +1,12 @@
 // src/pages/mypage/components/reviewEditModal.js
+/*
+  후기 수정 모달 구성 요소
+  - 모달 DOM 1회 마운트 처리
+  - 별점/내용 입력 및 검증 처리
+  - PATCH 요청으로 후기 수정 처리
+  - 수정 성공 시 mm:review-updated 이벤트 발행 처리
+*/
+
 import { escapeHtml, escapeAttr } from "../utils/dom.js";
 import {
   startOverlayLoading,
@@ -62,6 +70,7 @@ export function openReviewEditModal({
     0,
     5
   );
+
   updateStarUI(nextRating, body);
   updateCount(body);
   clearError("mmEditRatingErr", body);
@@ -79,6 +88,9 @@ export function closeReviewEditModal() {
   if (body) body.scrollTop = 0;
 }
 
+/*
+  수정 폼 HTML 생성 처리
+*/
 function renderEditForm({ reviewId, interviewId, rating, content }) {
   const safeReviewId = String(reviewId ?? "").trim();
   const safeInterviewId = String(interviewId ?? "").trim();
@@ -115,7 +127,7 @@ function renderEditForm({ reviewId, interviewId, rating, content }) {
         <div class="mm-edit-body">
           <div class="mm-textarea-wrap">
             <textarea class="mm-textarea mm-textarea--fixed" id="mmEditContent" name="content" rows="10"
-              placeholder="후기 내용을 입력한다"
+              placeholder="후기 내용을 입력합니다"
               maxlength="1000"
             >${escapeHtml(String(content ?? ""))}</textarea>
 
@@ -135,6 +147,9 @@ function renderEditForm({ reviewId, interviewId, rating, content }) {
   `;
 }
 
+/*
+  모달 이벤트 바인딩 1회 처리
+*/
 function bindFormOnce() {
   if (bound) return;
   bound = true;
@@ -205,6 +220,7 @@ function bindFormOnce() {
       0,
       5
     );
+
     const content = String(
       body.querySelector("#mmEditContent")?.value ?? ""
     ).trim();
@@ -215,13 +231,17 @@ function bindFormOnce() {
     try {
       startOverlayLoading();
 
+      if (!interviewId) {
+        applyServerError({ message: "인터뷰 식별자 누락" }, body);
+        return;
+      }
+
       const res = await api.patch(
         `/interviews/${encodeURIComponent(interviewId)}/reviews`,
         { rating, content }
       );
 
       if (!res?.success) {
-        endOverlayLoading();
         applyServerError(res, body);
         return;
       }
@@ -234,7 +254,6 @@ function bindFormOnce() {
         })
       );
     } catch (err) {
-      endOverlayLoading();
       applyServerError(err, body);
     } finally {
       endOverlayLoading();
@@ -243,34 +262,43 @@ function bindFormOnce() {
   });
 }
 
+/*
+  입력 검증 처리
+*/
 function validate({ rating, content }, root) {
   let ok = true;
 
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-    setError("mmEditRatingErr", "평점은 1~5 사이여야 한다", root);
+    setError("mmEditRatingErr", "평점은 1~5 사이 값 필요", root);
     ok = false;
   }
 
   if (!content) {
-    setError("mmEditContentErr", "후기 내용은 필수다", root);
+    setError("mmEditContentErr", "후기 내용 필수", root);
     ok = false;
   } else if (content.length > 1000) {
-    setError("mmEditContentErr", "후기 내용은 1000자 이하여야 한다", root);
+    setError("mmEditContentErr", "후기 내용 1000자 이하 필요", root);
     ok = false;
   }
 
   return ok;
 }
 
+/*
+  서버 오류 메시지 반영 처리
+*/
 function applyServerError(errOrRes, root) {
   const msg =
     String(errOrRes?.message ?? errOrRes?.error?.message ?? errOrRes ?? "")
       .replace(/\s+/g, " ")
-      .trim() || "요청에 실패했다";
+      .trim() || "요청에 실패했습니다";
 
   setError("mmEditContentErr", msg, root);
 }
 
+/*
+  별점 UI 갱신 처리
+*/
 function updateStarUI(rating, root) {
   const btns = Array.from(root.querySelectorAll(".mm-star-btn"));
   for (const b of btns) {
@@ -281,6 +309,9 @@ function updateStarUI(rating, root) {
   }
 }
 
+/*
+  글자수 카운트 갱신 처리
+*/
 function updateCount(root) {
   const ta = root.querySelector("#mmEditContent");
   const countEl = root.querySelector("#mmEditCount");
@@ -288,18 +319,27 @@ function updateCount(root) {
   countEl.textContent = String(String(ta.value ?? "").length);
 }
 
+/*
+  에러 표시 처리
+*/
 function setError(id, text, root) {
   const el = root?.querySelector?.(`#${id}`);
   if (!el) return;
   el.textContent = String(text || "");
 }
 
+/*
+  에러 초기화 처리
+*/
 function clearError(id, root) {
   const el = root?.querySelector?.(`#${id}`);
   if (!el) return;
   el.textContent = "";
 }
 
+/*
+  정수 클램프 처리
+*/
 function clampInt(v, min, max) {
   const n = Math.trunc(Number(v));
   if (!Number.isFinite(n)) return min;

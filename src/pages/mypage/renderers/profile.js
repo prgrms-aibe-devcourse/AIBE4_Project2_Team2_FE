@@ -1,5 +1,14 @@
 // src/pages/mypage/profile.js
-import { api, ApiError } from "../../../services/api.js";
+/*
+  마이페이지 프로필 탭 렌더링 및 이벤트 바인딩
+  - state.me 기반 폼 렌더링 처리
+  - 저장 시 클라이언트 검증 후 PATCH 요청 처리
+  - 프로필 이미지 업로드/삭제 처리
+  - 로컬/소셜 계정 구분에 따른 비밀번호 UI 및 검증 처리
+  - 저장 성공 시 로컬 사용자 캐시(mm_user) 및 헤더 동기화 이벤트 발행 처리
+*/
+
+import { ApiError } from "../../../services/api.js";
 import {
   showOverlayCheck,
   startOverlayLoading,
@@ -11,6 +20,7 @@ import {
   getPasswordRuleMessage,
   getNewPasswordConfirmMessage,
 } from "../utils/validation.js";
+import { updateMe, uploadProfileImage } from "../api.js";
 
 const USER_KEY = "mm_user";
 
@@ -21,10 +31,16 @@ const STATUS_OPTIONS = [
   { value: "ETC", label: "기타" },
 ];
 
+/*
+  희망 상태 판정
+*/
 function isWishStatus(status) {
   return status === "HIGH_SCHOOL" || status === "ETC";
 }
 
+/*
+  최소 HTML 이스케이프 처리
+*/
 function escapeHtml(s) {
   return String(s ?? "")
     .replaceAll("&", "&amp;")
@@ -34,6 +50,9 @@ function escapeHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
+/*
+  로컬 사용자 캐시 조회
+*/
 function readUser() {
   try {
     const raw = localStorage.getItem(USER_KEY);
@@ -43,6 +62,9 @@ function readUser() {
   }
 }
 
+/*
+  로컬 사용자 캐시 저장
+*/
 function writeUser(user) {
   try {
     if (!user) localStorage.removeItem(USER_KEY);
@@ -50,6 +72,9 @@ function writeUser(user) {
   } catch {}
 }
 
+/*
+  사용자 갱신 이벤트 발행
+*/
 function dispatchUserUpdated(user) {
   try {
     window.dispatchEvent(
@@ -58,34 +83,48 @@ function dispatchUserUpdated(user) {
   } catch {}
 }
 
+/*
+  아바타 적용 처리
+*/
 function applyAvatar(el, url) {
   if (!el) return;
+
   const u = String(url || "").trim();
   if (!u) {
-    el.style.backgroundImage = "";
-    el.style.backgroundSize = "";
-    el.style.backgroundPosition = "";
-    el.style.backgroundRepeat = "";
+    el.style.removeProperty("background-image");
+    el.style.removeProperty("background-size");
+    el.style.removeProperty("background-position");
+    el.style.removeProperty("background-repeat");
     return;
   }
+
   el.style.backgroundImage = `url("${u}")`;
   el.style.backgroundSize = "cover";
   el.style.backgroundPosition = "center";
   el.style.backgroundRepeat = "no-repeat";
 }
 
+/*
+  오류 메시지 설정 처리
+*/
 function setError(id, message) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = message ? String(message) : "";
 }
 
+/*
+  입력 invalid 스타일 토글 처리
+*/
 function setInvalid(id, on) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle("is-invalid", Boolean(on));
 }
 
+/*
+  모든 오류/invalid 초기화 처리
+*/
 function clearErrors() {
   const ids = [
     "err_form",
@@ -111,6 +150,9 @@ function clearErrors() {
   for (const id of inputs) setInvalid(id, false);
 }
 
+/*
+  서버 응답 기반 필드 오류 적용 처리
+*/
 function applyValidationErrors(errData) {
   const map = {
     nickname: ["err_nickname", "nickname"],
@@ -133,6 +175,7 @@ function applyValidationErrors(errData) {
 
   if (Array.isArray(fieldErrors)) {
     let applied = false;
+
     for (const fe of fieldErrors) {
       const field = String(fe?.field || fe?.name || "").trim();
       const message = String(fe?.message || "").trim();
@@ -145,12 +188,14 @@ function applyValidationErrors(errData) {
       setInvalid(pair[1], true);
       applied = true;
     }
+
     if (!applied) setError("err_form", msg);
     return;
   }
 
   if (fieldErrors && typeof fieldErrors === "object") {
     let applied = false;
+
     for (const [field, message] of Object.entries(fieldErrors)) {
       const key = String(field || "").trim();
       const val = String(message || "").trim();
@@ -163,6 +208,7 @@ function applyValidationErrors(errData) {
       setInvalid(pair[1], true);
       applied = true;
     }
+
     if (!applied) setError("err_form", msg);
     return;
   }
@@ -187,9 +233,12 @@ function applyValidationErrors(errData) {
   setError("err_form", msg);
 }
 
+/*
+  클라이언트 검증 오류 적용 처리
+*/
 function applyClientFieldErrors(fieldErrors, fallbackMessage) {
   if (!fieldErrors || typeof fieldErrors !== "object") {
-    const msg = fallbackMessage || "입력값을 확인해라";
+    const msg = fallbackMessage || "입력값을 확인해 주세요.";
     setError("err_nickname", msg);
     setInvalid("nickname", true);
     return;
@@ -220,26 +269,15 @@ function applyClientFieldErrors(fieldErrors, fallbackMessage) {
   }
 
   if (!applied) {
-    const msg = fallbackMessage || "입력값을 확인해라";
+    const msg = fallbackMessage || "입력값을 확인해 주세요.";
     setError("err_nickname", msg);
     setInvalid("nickname", true);
   }
 }
 
-async function patchMyInfo(payload) {
-  return api.patch("/members/me", payload);
-}
-
-async function putProfileImage(file) {
-  const fd = new FormData();
-  fd.append("file", file);
-  return api.putForm("/members/me/profile-image", fd);
-}
-
-async function deleteProfileImage() {
-  return api.delete("/members/me/profile-image");
-}
-
+/*
+  라벨 동기화 처리
+*/
 function syncWishLabels(status) {
   const uniLabel = document.getElementById("labelUniversity");
   const majorLabel = document.getElementById("labelMajor");
@@ -249,6 +287,9 @@ function syncWishLabels(status) {
   if (majorLabel) majorLabel.textContent = wish ? "희망 학과" : "학과";
 }
 
+/*
+  상태 옵션 초기화 처리
+*/
 function ensureStatusOptions(selectEl) {
   if (!selectEl) return;
   if (selectEl.options && selectEl.options.length > 0) return;
@@ -261,24 +302,32 @@ function ensureStatusOptions(selectEl) {
   }
 }
 
+/*
+  로컬 사용자 캐시 병합 처리
+*/
 function mergeUser(prev, updated) {
   const p = prev && typeof prev === "object" ? prev : {};
+  const u = updated && typeof updated === "object" ? updated : {};
+
   return {
     ...p,
-    memberId: updated?.memberId ?? p.memberId,
-    name: updated?.name ?? p.name,
-    username: updated?.username ?? p.username,
-    nickname: updated?.nickname ?? p.nickname,
-    email: updated?.email ?? p.email,
-    profileImageUrl: updated?.profileImageUrl ?? p.profileImageUrl ?? "",
-    status: updated?.status ?? p.status,
-    university: updated?.university ?? p.university,
-    major: updated?.major ?? p.major,
-    role: updated?.role ?? p.role,
-    authProvider: updated?.authProvider ?? p.authProvider,
+    memberId: u.memberId ?? p.memberId,
+    name: u.name ?? p.name,
+    username: u.username ?? p.username,
+    nickname: u.nickname ?? p.nickname,
+    email: u.email ?? p.email,
+    profileImageUrl: u.profileImageUrl ?? p.profileImageUrl ?? "",
+    status: u.status ?? p.status,
+    university: u.university ?? p.university,
+    major: u.major ?? p.major,
+    role: u.role ?? p.role,
+    authProvider: u.authProvider ?? p.authProvider,
   };
 }
 
+/*
+  학적 요약 문자열 생성 처리
+*/
 function formatAcademicLine(status, university, major) {
   const u = String(university || "").trim();
   const m = String(major || "").trim();
@@ -290,12 +339,43 @@ function formatAcademicLine(status, university, major) {
   return `${base} 희망`;
 }
 
+/*
+  요약 텍스트 반영 처리
+*/
 function updateProfileSummaryFromState(me) {
   const el = document.getElementById("mypageSummary");
   if (!el) return;
   el.textContent = formatAcademicLine(me?.status, me?.university, me?.major);
 }
 
+/*
+  로컬 계정 여부 판정 처리
+*/
+function isLocalUser(me) {
+  const provider = me?.authProvider ?? null;
+
+  if (provider) {
+    return String(provider).toUpperCase() === "LOCAL";
+  }
+
+  const username = me?.username ?? "";
+  const userStr = String(username).toLowerCase();
+
+  if (
+    userStr.startsWith("google_") ||
+    userStr.startsWith("github_") ||
+    userStr.startsWith("kakao_") ||
+    userStr.startsWith("naver_")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+/*
+  프로필 탭 템플릿 생성
+*/
 function template(me) {
   const safeName = escapeHtml(me?.name || "");
   const safeUsername = escapeHtml(me?.username || "");
@@ -304,23 +384,7 @@ function template(me) {
   const safeUni = escapeHtml(me?.university || "");
   const safeMajor = escapeHtml(me?.major || "");
 
-  // 소셜 로그인 사용자 확인
-  const provider = me?.authProvider ?? null;
-  let isLocal = true;
-
-  if (provider) {
-    isLocal = String(provider).toUpperCase() === "LOCAL";
-  } else {
-    // fallback: username으로 판단
-    const username = me?.username ?? "";
-    const userStr = String(username).toLowerCase();
-    if (userStr.startsWith("google_") ||
-        userStr.startsWith("github_") ||
-        userStr.startsWith("kakao_") ||
-        userStr.startsWith("naver_")) {
-      isLocal = false;
-    }
-  }
+  const isLocal = isLocalUser(me);
 
   return `
   <div class="mypage-profile" aria-label="내 정보 수정">
@@ -396,7 +460,9 @@ function template(me) {
         </div>
       </div>
 
-      ${isLocal ? `
+      ${
+        isLocal
+          ? `
       <div class="mypage-grid mypage-grid-3">
         <div class="mypage-field">
           <label class="mypage-label mypage-label--required" for="currentPassword">현재 비밀번호</label>
@@ -416,14 +482,16 @@ function template(me) {
           <div class="mypage-error" id="err_newPasswordConfirm" aria-live="polite"></div>
         </div>
       </div>
-      ` : `
+      `
+          : `
       <div class="mypage-field">
         <div class="mypage-label">비밀번호</div>
         <div style="padding: 12px; background-color: #f8f9fa; border-radius: 4px; color: #6c757d; font-size: 14px;">
           소셜 로그인 계정은 비밀번호 변경이 불가능합니다.
         </div>
       </div>
-      `}
+      `
+      }
 
       <div class="mypage-btn-row">
         <button class="mypage-save-btn" type="submit" id="btnSave">저장</button>
@@ -433,6 +501,9 @@ function template(me) {
   `;
 }
 
+/*
+  프로필 탭 렌더링 진입점
+*/
 export function renderProfileTab(state) {
   const listEl = document.getElementById("mypageList");
   const pagerEl = document.getElementById("mypagePagination");
@@ -440,7 +511,7 @@ export function renderProfileTab(state) {
   if (!listEl) return;
   if (pagerEl) pagerEl.innerHTML = "";
 
-  const me = state?.me || {};
+  const me = state?.me ?? {};
   listEl.innerHTML = template(me);
 
   const avatarEl = document.getElementById("mypageAvatar");
@@ -458,6 +529,13 @@ export function renderProfileTab(state) {
   if (statusSelect) {
     statusSelect.addEventListener("change", () => {
       syncWishLabels(statusSelect.value);
+      updateProfileSummaryFromState({
+        ...me,
+        status: statusSelect.value,
+        university:
+          document.getElementById("university")?.value ?? me.university,
+        major: document.getElementById("major")?.value ?? me.major,
+      });
     });
   }
 
@@ -466,6 +544,9 @@ export function renderProfileTab(state) {
   bindLiveValidation(state);
 }
 
+/*
+  프로필 저장 처리
+*/
 function bindProfileForm(state) {
   const form = document.getElementById("mypageForm");
   if (!form) return;
@@ -501,12 +582,13 @@ function bindProfileForm(state) {
       currentPassword,
       newPassword: newPassword ? newPassword : null,
       status: status || null,
-      university: university === "" ? "" : university,
-      major: major === "" ? "" : major,
+      university: university,
+      major: major,
     };
 
     const validatePayload = { ...payload, newPasswordConfirm };
     const v = validateProfileUpdate(validatePayload, state?.me);
+
     if (!v.ok) {
       applyClientFieldErrors(v.fieldErrors, v.message);
       return;
@@ -514,19 +596,14 @@ function bindProfileForm(state) {
 
     try {
       startOverlayLoading();
-      const res = await patchMyInfo(payload);
-      if (!res?.success) {
-        applyValidationErrors(res);
-        return;
-      }
-      endOverlayLoading();
-      showOverlayCheck({ durationMs: 1000 });
 
-      const updated = res.data;
+      const updated = await updateMe(payload);
+
       state.me = updated;
 
       const nickEl = document.getElementById("mypageNickname");
       if (nickEl) nickEl.textContent = updated?.nickname || "사용자";
+
       updateProfileSummaryFromState(updated);
 
       const statusSelect = document.getElementById("statusSelect");
@@ -551,23 +628,34 @@ function bindProfileForm(state) {
       if (cp) cp.value = "";
       if (np) np.value = "";
       if (npc) npc.value = "";
+
+      endOverlayLoading();
+      showOverlayCheck({ durationMs: 1000 });
     } catch (err) {
+      endOverlayLoading();
+
       if (err instanceof ApiError) {
         applyValidationErrors(err.data);
         return;
       }
-      setError("err_nickname", "서버 통신에 실패했습니다.");
+
+      setError("err_form", "서버 통신에 실패했습니다.");
     }
   });
 }
 
+/*
+  프로필 이미지 업로드/삭제 처리
+*/
 function bindProfileImage(state) {
   const btnChange = document.getElementById("btnProfileImageChange");
   const btnDelete = document.getElementById("btnProfileImageDelete");
   const fileInput = document.getElementById("profileImageFile");
 
   if (btnChange && fileInput) {
-    btnChange.addEventListener("click", () => fileInput.click());
+    btnChange.addEventListener("click", () => {
+      fileInput.click();
+    });
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files && fileInput.files[0];
@@ -576,10 +664,8 @@ function bindProfileImage(state) {
       try {
         startOverlayLoading();
 
-        const res = await putProfileImage(file);
-        if (!res?.success) return;
+        const updated = await uploadProfileImage(file);
 
-        const updated = res.data;
         state.me = updated;
 
         const avatarEl = document.getElementById("mypageAvatar");
@@ -593,7 +679,14 @@ function bindProfileImage(state) {
         endOverlayLoading();
         showOverlayCheck({ durationMs: 900 });
       } catch (err) {
-        console.error("프로필 이미지 업로드 실패:", err);
+        endOverlayLoading();
+
+        if (err instanceof ApiError) {
+          applyValidationErrors(err.data);
+          return;
+        }
+
+        setError("err_form", "이미지 업로드에 실패했습니다.");
       } finally {
         fileInput.value = "";
       }
@@ -602,13 +695,14 @@ function bindProfileImage(state) {
 
   if (btnDelete) {
     btnDelete.addEventListener("click", async () => {
+      const ok = confirm("프로필 이미지를 삭제하시겠습니까?");
+      if (!ok) return;
+
       try {
         startOverlayLoading();
 
-        const res = await deleteProfileImage();
-        if (!res?.success) return;
+        const updated = await updateMe({ profileImageUrl: "" });
 
-        const updated = res.data;
         state.me = updated;
 
         const avatarEl = document.getElementById("mypageAvatar");
@@ -619,42 +713,35 @@ function bindProfileImage(state) {
         if (!updated?.profileImageUrl) next.profileImageUrl = "";
         writeUser(next);
         dispatchUserUpdated(next);
+
         endOverlayLoading();
         showOverlayCheck({ durationMs: 1000 });
       } catch (err) {
-        console.error("프로필 이미지 삭제 실패:", err);
-      } finally {
+        endOverlayLoading();
+
+        if (err instanceof ApiError) {
+          applyValidationErrors(err.data);
+          return;
+        }
+
+        setError("err_form", "이미지 삭제에 실패했습니다.");
       }
     });
   }
 }
 
+/*
+  라이브 검증 처리
+*/
 function bindLiveValidation(state) {
   const nick = document.getElementById("nickname");
+  if (!nick) return;
+
   const cp = document.getElementById("currentPassword");
   const np = document.getElementById("newPassword");
   const npc = document.getElementById("newPasswordConfirm");
 
-  if (!nick) return;
-
-  const isLocal = (() => {
-    const provider = state?.me?.authProvider ?? null;
-    if (provider) {
-      return String(provider).toUpperCase() === "LOCAL";
-    }
-
-    // fallback: username으로 판단
-    const username = state?.me?.username ?? "";
-    const userStr = String(username).toLowerCase();
-    if (userStr.startsWith("google_") ||
-        userStr.startsWith("github_") ||
-        userStr.startsWith("kakao_") ||
-        userStr.startsWith("naver_")) {
-      return false;
-    }
-
-    return true;
-  })();
+  const isLocal = isLocalUser(state?.me);
 
   const touched = {
     nickname: false,
@@ -665,7 +752,6 @@ function bindLiveValidation(state) {
 
   const render = () => {
     const nickVal = String(nick.value || "");
-
     const nickMsg = touched.nickname ? getNicknameRuleMessage(nickVal) : "";
 
     setError("err_nickname", nickMsg);
@@ -714,6 +800,7 @@ function bindLiveValidation(state) {
     touched.nickname = true;
     render();
   });
+
   nick.addEventListener("input", () => {
     touched.nickname = true;
     render();

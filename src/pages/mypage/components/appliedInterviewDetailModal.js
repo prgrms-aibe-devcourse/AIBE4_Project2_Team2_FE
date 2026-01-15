@@ -1,4 +1,11 @@
 // src/pages/mypage/components/appliedInterviewDetailModal.js
+/*
+  신청한 인터뷰 상세 모달 구성 요소
+  - 모달 DOM 마운트 처리
+  - 상세 데이터 렌더링 처리
+  - 닫기 동작 및 스크롤 초기화 처리
+*/
+
 import { escapeHtml, escapeAttr } from "../utils/dom.js";
 
 let mounted = false;
@@ -12,12 +19,7 @@ export function openAppliedInterviewDetailModal(data) {
 
   body.innerHTML = renderDetail(data);
 
-  body.scrollTop = 0;
-  body.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
-  requestAnimationFrame(() => {
-    body.scrollTop = 0;
-    body.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
-  });
+  resetBodyScroll(body);
 
   modal.classList.add("is-open");
   document.body.classList.add("mm-modal-open");
@@ -32,10 +34,12 @@ export function closeAppliedInterviewDetailModal() {
 }
 
 function ensureModal() {
+  /* 모달 DOM 중복 생성 방지 처리 */
+  if (document.getElementById("appliedInterviewDetailModal")) return;
+
+  /* 이미 마운트된 상태면 추가 처리 중단 */
   if (mounted) return;
   mounted = true;
-
-  if (document.getElementById("appliedInterviewDetailModal")) return;
 
   const el = document.createElement("div");
   el.id = "appliedInterviewDetailModal";
@@ -49,11 +53,13 @@ function ensureModal() {
   `;
   document.body.appendChild(el);
 
+  /* 배경 클릭 닫기 처리 */
   el.addEventListener("click", (e) => {
     const act = e.target?.getAttribute?.("data-action");
     if (act === "close") closeAppliedInterviewDetailModal();
   });
 
+  /* ESC 닫기 처리 */
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeAppliedInterviewDetailModal();
   });
@@ -82,9 +88,9 @@ function renderDetail(item) {
   const dateLine = responded
     ? `<span class="mm-date-label">신청일</span> ${escapeHtml(
         createdAt
-      )} · <span class="mm-date-label">${endLabel}</span> ${escapeHtml(
-        updatedAt
-      )}`
+      )} · <span class="mm-date-label">${escapeHtml(
+        endLabel
+      )}</span> ${escapeHtml(updatedAt)}`
     : `<span class="mm-date-label">신청일</span> ${escapeHtml(createdAt)}`;
 
   const dateTitle = responded
@@ -97,7 +103,11 @@ function renderDetail(item) {
   const preferredDatetime = formatDateTime(interview?.preferredDatetime) || "-";
   const extraDescription = safeText(interview?.extraDescription, "-");
 
-  const majorMessage = safeText(item?.majorMessage, "-");
+  /* 응답 DTO 위치 차이를 고려한 전공자 메시지 추출 처리 */
+  const majorMessage = safeText(
+    item?.majorMessage ?? interview?.majorMessage ?? "",
+    "-"
+  );
 
   return `
     <div class="mm-modal__stack">
@@ -220,4 +230,14 @@ function toComparableKey(dt) {
   const fracRaw = m[2] || "";
   const frac = fracRaw.replace(/0+$/, "");
   return frac ? `${base}.${frac}` : base;
+}
+
+function resetBodyScroll(body) {
+  if (!body) return;
+  body.scrollTop = 0;
+  body.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  requestAnimationFrame(() => {
+    body.scrollTop = 0;
+    body.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  });
 }

@@ -1,27 +1,41 @@
 // src/pages/mypage/utils/validation.js
+/*
+  프로필 수정 검증 로직
+  - 닉네임 규칙 검증
+  - 대학교/학과 길이 제한 검증
+  - 로컬/소셜 계정에 따른 비밀번호 변경 가능 여부 검증
+  - 비밀번호 변경 시 현재/새/확인 3종 필수 및 규칙 검증
+*/
+
 export function validateProfileUpdate(payload, me) {
   const fieldErrors = {};
 
-  const nicknameMsg = getNicknameRuleMessage(payload.nickname);
+  const p = payload && typeof payload === "object" ? payload : {};
+  const profile = me && typeof me === "object" ? me : {};
+
+  // 닉네임 규칙 검증
+  const nicknameMsg = getNicknameRuleMessage(p.nickname);
   if (nicknameMsg) fieldErrors.nickname = nicknameMsg;
 
-  if (payload.university != null && String(payload.university).length > 20) {
+  // 대학교/학과 길이 제한 검증
+  if (p.university != null && String(p.university).length > 20) {
     fieldErrors.university = "대학교명은 20자 이하입니다.";
   }
-  if (payload.major != null && String(payload.major).length > 20) {
+  if (p.major != null && String(p.major).length > 20) {
     fieldErrors.major = "학과명은 20자 이하입니다.";
   }
 
-  const currentPassword = String(payload.currentPassword || "").trim();
-  const newPassword = String(payload.newPassword || "").trim();
-  const newPasswordConfirm = String(payload.newPasswordConfirm || "").trim();
+  // 비밀번호 입력값 정규화
+  const currentPassword = String(p.currentPassword || "").trim();
+  const newPassword = String(p.newPassword || "").trim();
+  const newPasswordConfirm = String(p.newPasswordConfirm || "").trim();
 
-  const isLocal = isLikelyLocalUser(me);
+  const isLocal = isLikelyLocalUser(profile);
   const hasAnyPwdInput = Boolean(
     currentPassword || newPassword || newPasswordConfirm
   );
 
-  // 소셜 계정: 비밀번호 관련 입력이 조금이라도 있으면 금지
+  // 소셜 계정 처리: 비밀번호 관련 입력이 있으면 즉시 오류 처리
   if (!isLocal) {
     if (hasAnyPwdInput) {
       if (currentPassword) {
@@ -41,9 +55,9 @@ export function validateProfileUpdate(payload, me) {
     return { ok, fieldErrors, message: ok ? "" : "입력값을 확인해 주세요." };
   }
 
-  // 로컬 계정: 비밀번호 변경은 선택
-  // 단, 변경을 시도했다면(current/new/confirm 중 하나라도 입력) 세 값 모두 필요
+  // 로컬 계정 처리: 비밀번호 변경은 선택 사항, 입력이 시작되면 3종 필수
   if (hasAnyPwdInput) {
+    // 현재 비밀번호
     if (!currentPassword) {
       fieldErrors.currentPassword = "현재 비밀번호가 필요합니다.";
     } else {
@@ -51,6 +65,7 @@ export function validateProfileUpdate(payload, me) {
       if (curErr) fieldErrors.currentPassword = curErr;
     }
 
+    // 새 비밀번호
     if (!newPassword) {
       fieldErrors.newPassword = "새 비밀번호가 필요합니다.";
     } else {
@@ -58,26 +73,29 @@ export function validateProfileUpdate(payload, me) {
       if (newErr) fieldErrors.newPassword = newErr;
     }
 
+    // 새 비밀번호 확인
     if (!newPasswordConfirm) {
       fieldErrors.newPasswordConfirm = "새 비밀번호 확인이 필요합니다.";
     } else if (newPassword && newPassword !== newPasswordConfirm) {
       fieldErrors.newPasswordConfirm = "새 비밀번호가 일치하지 않습니다.";
     }
 
-    // 서버 규칙과 동일한 수준에서 미리 차단
+    // 현재 비밀번호와 새 비밀번호 동일 여부 검증
     if (currentPassword && newPassword && currentPassword === newPassword) {
       fieldErrors.newPassword = "새 비밀번호는 현재 비밀번호와 달라야 합니다.";
     }
   }
 
   const ok = Object.keys(fieldErrors).length === 0;
-  return {
-    ok,
-    fieldErrors,
-    message: ok ? "" : "입력값을 확인해 주세요.",
-  };
+  return { ok, fieldErrors, message: ok ? "" : "입력값을 확인해 주세요." };
 }
 
+/*
+  닉네임 규칙 메시지 반환
+  - 비어 있으면 필수 메시지
+  - 길이 2~20 제한
+  - 한글/영문/숫자/_/-만 허용
+*/
 export function getNicknameRuleMessage(nicknameRaw) {
   const v = String(nicknameRaw || "").trim();
   if (!v) return "닉네임은 필수입니다.";
@@ -87,6 +105,9 @@ export function getNicknameRuleMessage(nicknameRaw) {
   return "";
 }
 
+/*
+  이메일 규칙 메시지 반환
+*/
 export function getEmailRuleMessage(emailRaw) {
   const v = String(emailRaw || "").trim();
   if (!v) return "이메일은 필수입니다.";
@@ -96,6 +117,12 @@ export function getEmailRuleMessage(emailRaw) {
   return "";
 }
 
+/*
+  비밀번호 규칙 메시지 반환
+  - 빈 값은 "검증 대상 아님"으로 처리(상위 로직에서 필수 여부 판단)
+  - 8~20자
+  - 영문/숫자/특수문자(@$!%*#?&) 포함
+*/
 export function getPasswordRuleMessage(passwordRaw) {
   const v = String(passwordRaw || "").trim();
   if (!v) return "";
@@ -113,6 +140,11 @@ export function getPasswordRuleMessage(passwordRaw) {
   return "";
 }
 
+/*
+  새 비밀번호 확인 메시지 반환
+  - 둘 다 비어 있으면 통과
+  - confirm만 비어 있으면 상위에서 필수 처리 가능
+*/
 export function getNewPasswordConfirmMessage(newPasswordRaw, confirmRaw) {
   const pwd = String(newPasswordRaw || "").trim();
   const cfm = String(confirmRaw || "").trim();
@@ -122,6 +154,11 @@ export function getNewPasswordConfirmMessage(newPasswordRaw, confirmRaw) {
   return pwd === cfm ? "" : "새 비밀번호가 일치하지 않습니다.";
 }
 
+/*
+  로컬 계정 추정 로직
+  - authProvider가 있으면 LOCAL 여부로 판정
+  - 없으면 username prefix로 소셜 계정 추정
+*/
 function isLikelyLocalUser(me) {
   const provider = me?.authProvider ?? null;
 
@@ -131,6 +168,7 @@ function isLikelyLocalUser(me) {
 
   const username = me?.username ?? "";
   const userStr = String(username).toLowerCase();
+
   if (
     userStr.startsWith("google_") ||
     userStr.startsWith("github_") ||

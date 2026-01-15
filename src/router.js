@@ -1,4 +1,14 @@
 // src/router.js
+/*
+  라우터 정책 정리
+  - PUBLIC_PATHS: 비로그인 접근 허용 경로 집합
+  - ROUTES: 정적 경로 렌더러 매핑
+  - DYNAMIC_ROUTES: 파라미터 포함 경로 렌더러 매핑
+  - CSS_BY_ROUTE: 경로별 CSS 파일 매핑
+  - HIDE_HEADER_ON: 헤더 숨김 조건 목록
+  - 마이페이지 모달 잔존 방지: 마이페이지 이탈 시 모달 DOM 제거 및 body 상태 복구 처리
+*/
+
 import { isLoggedIn, getSession, logout } from "./auth/auth.js";
 
 import { renderHome } from "./pages/home.js";
@@ -22,14 +32,8 @@ import { renderRecommend } from "./pages/recommend.js";
 import { renderProfileDetail } from "./pages/major-card-detail.js";
 
 /*
-  라우터 정책
-  - PUBLIC_PATHS: 로그인 없이 접근 가능한 경로
-  - ROUTES: 정적 경로 렌더러 매핑
-  - DYNAMIC_ROUTES: 파라미터가 포함된 동적 경로 렌더러 매핑
-  - CSS_BY_ROUTE: 경로별 CSS 파일 매핑
-  - HIDE_HEADER_ON: 특정 경로에서 헤더를 숨기는 조건
+  비로그인 접근 허용 경로 목록
 */
-
 const PUBLIC_PATHS = new Set([
   "/login",
   "/signup",
@@ -38,6 +42,9 @@ const PUBLIC_PATHS = new Set([
   "/find-password",
 ]);
 
+/*
+  정적 라우트 렌더러 매핑
+*/
 const ROUTES = {
   "/": renderHome,
   "/mypage": renderMyPage,
@@ -54,38 +61,49 @@ const ROUTES = {
 
 /*
   동적 라우트 목록
-  - matchPath로 pattern과 실제 path를 비교하여 params를 추출한다
-  - params는 render(view, params) 형태로 넘긴다
 */
 const DYNAMIC_ROUTES = [
   { pattern: "/interview-create/:id", render: renderInterviewCreate },
-  { pattern: "/major-role-request-detail/:id", render: renderMajorRequestDetail },
+  {
+    pattern: "/major-role-request-detail/:id",
+    render: renderMajorRequestDetail,
+  },
   { pattern: "/major-card-detail/:id", render: renderProfileDetail },
 ];
 
 /*
   경로별 CSS 매핑
-  - 먼저 매칭되는 규칙의 files를 적용한다
-  - data-route-style="1" 링크를 매 라우팅마다 제거 후 다시 주입한다
 */
 const CSS_BY_ROUTE = [
   { test: (p) => PUBLIC_PATHS.has(p), files: ["src/css/auth.css"] },
   { test: (p) => p === "/", files: ["src/css/home.css"] },
-  { test: (p) => p === "/mypage" || p.startsWith("/mypage/"), files: ["src/css/mypage.css"] },
+  {
+    test: (p) => p === "/mypage" || p.startsWith("/mypage/"),
+    files: ["src/css/mypage.css"],
+  },
   { test: (p) => p === "/apply", files: ["src/css/apply.css"] },
-  { test: (p) => p.startsWith("/interview-create/"), files: ["src/css/interview-create.css"] },
+  {
+    test: (p) => p.startsWith("/interview-create/"),
+    files: ["src/css/interview-create.css"],
+  },
   { test: (p) => p === "/major-profile", files: ["src/css/major-profile.css"] },
   { test: (p) => p === "/recommend", files: ["src/css/recommend.css"] },
-  { test: (p) => p === "/major-role-request", files: ["src/css/major-role-request.css"] },
-  { test: (p) => p.startsWith("/major-role-request-detail/"), files: ["src/css/major-role-request-detail.css"] },
-  { test: (p) => p.startsWith("/major-card-detail/"), files: ["src/css/profileDetail.css"] },
+  {
+    test: (p) => p === "/major-role-request",
+    files: ["src/css/major-role-request.css"],
+  },
+  {
+    test: (p) => p.startsWith("/major-role-request-detail/"),
+    files: ["src/css/major-role-request-detail.css"],
+  },
+  {
+    test: (p) => p.startsWith("/major-card-detail/"),
+    files: ["src/css/profileDetail.css"],
+  },
 ];
 
 /*
-  특정 경로에서는 헤더를 숨긴다
-  - 인증 페이지
-  - 상세 페이지(요청사항 기준)
-  - 인터뷰 생성 팝업 화면(요청사항 기준)
+  특정 경로에서 헤더 숨김 조건 목록
 */
 const HIDE_HEADER_ON = [
   (p) => PUBLIC_PATHS.has(p),
@@ -94,8 +112,18 @@ const HIDE_HEADER_ON = [
 ];
 
 /*
-  해시 라우터 이동
-  - 동일 경로로의 중복 이동은 무시한다
+  마이페이지 모달 잔존 방지용 대상 ID 목록
+*/
+const MYPAGE_MODAL_IDS = [
+  "reviewCreateModal",
+  "reviewEditModal",
+  "reviewDetailModal",
+  "qnaEditModal",
+  "appliedInterviewDetailModal",
+];
+
+/*
+  해시 라우터 이동 함수
 */
 export function navigate(path) {
   const p = normalizePath(path);
@@ -104,10 +132,7 @@ export function navigate(path) {
 }
 
 /*
-  라우터 시작
-  - 헤더 버튼 이벤트 바인딩
-  - 세션/유저 업데이트 이벤트를 수신하면 헤더를 즉시 동기화
-  - 해시 변경 시 route 실행
+  라우터 시작 함수
 */
 export function startRouter() {
   bindHeaderActions();
@@ -120,19 +145,21 @@ export function startRouter() {
 }
 
 /*
-  라우팅 본체
-  1) path 계산
-  2) 가드(로그인 여부, 공개 경로 여부)
-  3) 헤더 표시/숨김, CSS 적용
-  4) 헤더 유저/모바일 메뉴 상태 동기화
-  5) 동적 라우트 우선 매칭, 실패 시 정적 라우트 렌더
+  라우팅 본체 함수
 */
 function route() {
   const view = document.getElementById("view");
   if (!view) return;
 
+  const prevPath = getPrevGuardPath();
   const path = getPath();
   const guardPath = normalizePathForGuard(path);
+
+  if (prevPath && prevPath !== guardPath) {
+    cleanupOnRouteLeave(prevPath, guardPath);
+  }
+
+  setPrevGuardPath(guardPath);
 
   if (!PUBLIC_PATHS.has(guardPath) && !isLoggedIn()) {
     navigate("/login");
@@ -163,8 +190,40 @@ function route() {
 }
 
 /*
-  동적 라우트 해석
-  - 선언된 DYNAMIC_ROUTES를 순회하며 최초로 매칭되는 항목을 반환한다
+  라우트 이탈 시 정리 처리
+*/
+function cleanupOnRouteLeave(prevGuardPath, nextGuardPath) {
+  if (isMyPagePath(prevGuardPath) && !isMyPagePath(nextGuardPath)) {
+    cleanupMyPageModals();
+  }
+}
+
+/*
+  마이페이지 여부 판단
+*/
+function isMyPagePath(guardPath) {
+  const p = normalizePathForGuard(guardPath);
+  return p === "/mypage" || p.startsWith("/mypage/");
+}
+
+/*
+  마이페이지 모달 정리 처리
+*/
+function cleanupMyPageModals() {
+  for (const id of MYPAGE_MODAL_IDS) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  document.body.classList.remove("mm-modal-open");
+
+  document
+    .querySelectorAll(".mm-modal.is-open")
+    .forEach((el) => el.classList.remove("is-open"));
+}
+
+/*
+  동적 라우트 해석 함수
 */
 function resolveDynamicRoute(path) {
   for (const r of DYNAMIC_ROUTES) {
@@ -175,9 +234,7 @@ function resolveDynamicRoute(path) {
 }
 
 /*
-  현재 해시에서 경로를 추출한다
-  - hash가 없으면 "#/"로 간주
-  - "#/xxx" -> "/xxx"
+  현재 해시에서 경로 추출 함수
 */
 function getPath() {
   const raw = window.location.hash || "#/";
@@ -186,9 +243,7 @@ function getPath() {
 }
 
 /*
-  경로 정규화
-  - 빈 값이면 "/"
-  - "/"로 시작하지 않으면 "/"를 붙인다
+  경로 정규화 함수
 */
 function normalizePath(p) {
   const s = String(p || "").trim();
@@ -198,9 +253,7 @@ function normalizePath(p) {
 }
 
 /*
-  가드 및 매칭용 정규화
-  - 쿼리(?), 추가 해시(#)를 제거한다
-  - "/path?x=1" -> "/path"
+  가드 및 매칭용 경로 정규화 함수
 */
 function normalizePathForGuard(path) {
   const s = String(path || "").trim();
@@ -215,9 +268,7 @@ function normalizePathForGuard(path) {
 }
 
 /*
-  패턴 매칭
-  - 길이가 다르면 실패
-  - ":param" 형태면 params로 추출
+  패턴 매칭 함수
 */
 function matchPath(actualPath, pattern) {
   const actual = normalizePathForGuard(actualPath);
@@ -243,7 +294,7 @@ function matchPath(actualPath, pattern) {
 }
 
 /*
-  헤더 표시/숨김
+  헤더 표시/숨김 함수
 */
 function toggleHeader(path) {
   const header = document.getElementById("siteHeader");
@@ -254,8 +305,7 @@ function toggleHeader(path) {
 }
 
 /*
-  라우트별 CSS 주입
-  - 기존 data-route-style="1" 링크를 제거하고 현재 경로에 맞는 CSS를 다시 주입한다
+  라우트별 CSS 주입 함수
 */
 function syncRouteStyles(guardPath) {
   const head = document.head;
@@ -275,8 +325,7 @@ function syncRouteStyles(guardPath) {
 }
 
 /*
-  경로에 해당하는 CSS 파일 목록 반환
-  - CSS_BY_ROUTE의 첫 매칭 규칙을 사용한다
+  경로에 해당하는 CSS 파일 목록 반환 함수
 */
 function getCssFilesForPath(guardPath) {
   for (const rule of CSS_BY_ROUTE) {
@@ -286,12 +335,7 @@ function getCssFilesForPath(guardPath) {
 }
 
 /*
-  헤더 액션 바인딩
-  - 마이페이지 이동
-  - 로그아웃 후 로그인 페이지 이동
-  - 모바일 모드일 때만 아바타 버튼으로 메뉴 토글
-  - 메뉴 외부 클릭 및 ESC로 닫기
-  - 리사이즈 시 모바일 모드 상태 반영
+  헤더 액션 바인딩 함수
 */
 function bindHeaderActions() {
   const mypageBtn = document.getElementById("btnMyPage");
@@ -354,7 +398,7 @@ function bindHeaderActions() {
 }
 
 /*
-  유저 메뉴 토글
+  유저 메뉴 토글 함수
 */
 function toggleUserMenu(menu) {
   if (!menu) return;
@@ -362,7 +406,7 @@ function toggleUserMenu(menu) {
 }
 
 /*
-  유저 메뉴 닫기
+  유저 메뉴 닫기 함수
 */
 function closeUserMenu() {
   const menu = document.getElementById("userMenu");
@@ -371,10 +415,7 @@ function closeUserMenu() {
 }
 
 /*
-  헤더 유저 정보 동기화
-  - 로그인 상태면 링크 영역 표시, 아니면 숨김
-  - 닉네임 표시
-  - 아바타(프로필 이미지) 반영
+  헤더 유저 정보 동기화 함수
 */
 function syncHeaderUser() {
   const session = getSession();
@@ -395,8 +436,7 @@ function syncHeaderUser() {
 }
 
 /*
-  헤더 아바타 반영
-  - profileImageUrl이 없으면 background-image 제거
+  헤더 아바타 반영 함수
 */
 function applyHeaderAvatar(profileImageUrl) {
   const url = String(profileImageUrl || "").trim();
@@ -418,14 +458,14 @@ function applyHeaderAvatar(profileImageUrl) {
 }
 
 /*
-  모바일 헤더 모드 판단
+  모바일 헤더 모드 판단 함수
 */
 function isMobileHeaderMode() {
   return window.matchMedia("(max-width: 720px)").matches;
 }
 
 /*
-  모바일 모드에서만 아바타 버튼을 활성화한다
+  모바일 모드에서만 아바타 버튼 활성화 처리
 */
 function syncMobileMenuAvailability() {
   const avatarBtn = document.getElementById("avatarBtn");
@@ -433,4 +473,23 @@ function syncMobileMenuAvailability() {
   const mobile = isMobileHeaderMode();
   avatarBtn.disabled = !mobile;
   avatarBtn.classList.toggle("avatar-btn--disabled", !mobile);
+}
+
+/*
+  이전 가드 경로 저장용 유틸
+*/
+const PREV_GUARD_KEY = "__mm_prev_guard_path__";
+
+function getPrevGuardPath() {
+  try {
+    return sessionStorage.getItem(PREV_GUARD_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function setPrevGuardPath(path) {
+  try {
+    sessionStorage.setItem(PREV_GUARD_KEY, String(path || ""));
+  } catch {}
 }
