@@ -1,8 +1,4 @@
 import { navigate } from "../router.js";
-import {
-  REVIEWS_BY_PROFILE,
-  QNA_BY_PROFILE,
-} from "../data/profileDetailData.js";
 import { api } from "../services/api.js";
 import { getSession } from "../auth/auth.js";
 import {

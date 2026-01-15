@@ -1,5 +1,3 @@
-// import { PROFILES } from "../data/profiles.js";
-import { getSession } from "../auth/auth.js";
 import { navigate } from "../router.js";
 import { api, ApiError } from "../services/api.js";
 import { withOverlayLoading } from "../utils/overlay.js";

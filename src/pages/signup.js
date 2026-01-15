@@ -28,6 +28,7 @@ export function renderSignup(root) {
             <div class="auth-row">
               <label class="auth-label">아이디</label>
               <input class="auth-input" name="username" placeholder="아이디를 입력하세요" required />
+              <div id="usernameStatus" class="auth-verification-status"></div>
             </div>
 
             <div class="auth-row">
@@ -38,6 +39,7 @@ export function renderSignup(root) {
             <div class="auth-row">
               <label class="auth-label">닉네임</label>
               <input class="auth-input" name="nickname" placeholder="닉네임을 입력하세요" required />
+              <div id="nicknameStatus" class="auth-verification-status"></div>
             </div>
 
             <div class="auth-row">
@@ -63,23 +65,26 @@ export function renderSignup(root) {
             </div>
 
             <div class="auth-row">
-              <label class="auth-label">재학 상태</label>
+              <label class="auth-label">신분</label>
               <select class="auth-input" name="status" required>
                 <option value="">선택</option>
-                <option value="ENROLLED">재학</option>
-                <option value="GRADUATED">졸업</option>
-                <option value="HIGHSCHOOL">고등학생</option>
+                <option value="ENROLLED">재학생</option>
+                <option value="GRADUATED">졸업생</option>
+                <option value="HIGH_SCHOOL">고등학생</option>
+                <option value="ETC">기타</option>
               </select>
             </div>
 
             <div class="auth-row">
               <label class="auth-label">비밀번호</label>
               <input class="auth-input" name="password" type="password" placeholder="비밀번호를 입력하세요" required />
+              <div id="passwordStatus" class="auth-verification-status"></div>
             </div>
 
             <div class="auth-row">
               <label class="auth-label">비밀번호 확인</label>
               <input class="auth-input" name="password2" type="password" placeholder="비밀번호를 다시 입력하세요" required />
+              <div id="password2Status" class="auth-verification-status"></div>
             </div>
 
             <button class="auth-primary" type="submit">가입하기</button>
@@ -125,6 +130,18 @@ export function renderSignup(root) {
   const githubSignupBtn = wrap.querySelector("#githubSignup");
   const kakaoSignupBtn = wrap.querySelector("#kakaoSignup");
 
+  // 폼 입력 요소
+  const usernameInput = wrap.querySelector('input[name="username"]');
+  const nicknameInput = wrap.querySelector('input[name="nickname"]');
+  const passwordInput = wrap.querySelector('input[name="password"]');
+  const password2Input = wrap.querySelector('input[name="password2"]');
+
+  // 상태 메시지 요소
+  const usernameStatus = wrap.querySelector("#usernameStatus");
+  const nicknameStatus = wrap.querySelector("#nicknameStatus");
+  const passwordStatus = wrap.querySelector("#passwordStatus");
+  const password2Status = wrap.querySelector("#password2Status");
+
   // 이메일 인증 관련 요소
   const emailInput = wrap.querySelector("#emailInput");
   const sendVerificationBtn = wrap.querySelector("#sendVerificationBtn");
@@ -135,6 +152,165 @@ export function renderSignup(root) {
   const verificationStatus = wrap.querySelector("#verificationStatus");
 
   let isEmailVerified = false;
+  let isUsernameValid = false;
+  let isNicknameValid = false;
+
+  // Debounce 함수
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // 비밀번호 검증 함수
+  function validatePassword(password) {
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const isLengthValid = password.length >= 8 && password.length <= 20;
+
+    return {
+      valid: isLengthValid && hasLetter && hasNumber && hasSpecial,
+      hasLetter,
+      hasNumber,
+      hasSpecial,
+      isLengthValid,
+    };
+  }
+
+  // 아이디 중복 체크
+  const checkUsername = debounce(async (username) => {
+    if (!username || username.length < 2 || username.length > 20) {
+      usernameStatus.textContent = "아이디는 2자 이상 20자 이하여야 합니다";
+      usernameStatus.className = "auth-verification-status error";
+      isUsernameValid = false;
+      return;
+    }
+
+    usernameStatus.textContent = "확인 중...";
+    usernameStatus.className = "auth-verification-status";
+
+    try {
+      const result = await api.get(`/auth/check-username?username=${encodeURIComponent(username)}`);
+
+      if (result.data?.available) {
+        usernameStatus.textContent = "✓ 사용 가능한 아이디입니다";
+        usernameStatus.className = "auth-verification-status success";
+        isUsernameValid = true;
+      } else {
+        usernameStatus.textContent = "이미 사용 중인 아이디입니다";
+        usernameStatus.className = "auth-verification-status error";
+        isUsernameValid = false;
+      }
+    } catch (error) {
+      console.error("아이디 중복 체크 에러:", error);
+      usernameStatus.textContent = "중복 확인 실패. 다시 시도해주세요";
+      usernameStatus.className = "auth-verification-status error";
+      isUsernameValid = false;
+    }
+  }, 500);
+
+  // 닉네임 중복 체크
+  const checkNickname = debounce(async (nickname) => {
+    if (!nickname || nickname.length < 2 || nickname.length > 20) {
+      nicknameStatus.textContent = "닉네임은 2자 이상 20자 이하여야 합니다";
+      nicknameStatus.className = "auth-verification-status error";
+      isNicknameValid = false;
+      return;
+    }
+
+    nicknameStatus.textContent = "확인 중...";
+    nicknameStatus.className = "auth-verification-status";
+
+    try {
+      const result = await api.get(`/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+
+      if (result.data?.available) {
+        nicknameStatus.textContent = "✓ 사용 가능한 닉네임입니다";
+        nicknameStatus.className = "auth-verification-status success";
+        isNicknameValid = true;
+      } else {
+        nicknameStatus.textContent = "이미 사용 중인 닉네임입니다";
+        nicknameStatus.className = "auth-verification-status error";
+        isNicknameValid = false;
+      }
+    } catch (error) {
+      console.error("닉네임 중복 체크 에러:", error);
+      nicknameStatus.textContent = "중복 확인 실패. 다시 시도해주세요";
+      nicknameStatus.className = "auth-verification-status error";
+      isNicknameValid = false;
+    }
+  }, 500);
+
+  // 실시간 아이디 검증
+  usernameInput.addEventListener("input", (e) => {
+    checkUsername(e.target.value.trim());
+  });
+
+  // 실시간 닉네임 검증
+  nicknameInput.addEventListener("input", (e) => {
+    checkNickname(e.target.value.trim());
+  });
+
+  // 실시간 비밀번호 검증
+  passwordInput.addEventListener("input", (e) => {
+    const password = e.target.value;
+    const validation = validatePassword(password);
+
+    if (!password) {
+      passwordStatus.textContent = "";
+      passwordStatus.className = "auth-verification-status";
+      return;
+    }
+
+    if (validation.valid) {
+      passwordStatus.textContent = "✓ 사용 가능한 비밀번호입니다";
+      passwordStatus.className = "auth-verification-status success";
+    } else {
+      const errors = [];
+      if (!validation.isLengthValid) errors.push("8자 이상 20자 이하");
+      if (!validation.hasLetter) errors.push("영문자");
+      if (!validation.hasNumber) errors.push("숫자");
+      if (!validation.hasSpecial) errors.push("특수기호");
+
+      passwordStatus.textContent = `필요: ${errors.join(", ")}`;
+      passwordStatus.className = "auth-verification-status error";
+    }
+
+    // 비밀번호 확인 필드도 체크
+    if (password2Input.value) {
+      validatePassword2();
+    }
+  });
+
+  // 비밀번호 확인 검증 함수
+  function validatePassword2() {
+    const password = passwordInput.value;
+    const password2 = password2Input.value;
+
+    if (!password2) {
+      password2Status.textContent = "";
+      password2Status.className = "auth-verification-status";
+      return;
+    }
+
+    if (password === password2) {
+      password2Status.textContent = "✓ 비밀번호가 일치합니다";
+      password2Status.className = "auth-verification-status success";
+    } else {
+      password2Status.textContent = "비밀번호가 일치하지 않습니다";
+      password2Status.className = "auth-verification-status error";
+    }
+  }
+
+  // 실시간 비밀번호 확인 검증
+  password2Input.addEventListener("input", validatePassword2);
 
   toLogin.addEventListener("click", () => navigate("/login"));
 
@@ -148,10 +324,23 @@ export function renderSignup(root) {
     }
 
     sendVerificationBtn.disabled = true;
-    emailStatus.textContent = "발송 중...";
+    emailStatus.textContent = "이메일 확인 중...";
     emailStatus.className = "auth-verification-status";
 
     try {
+      // 1. 먼저 이메일 중복 체크
+      const checkResult = await api.get(`/auth/check-email?email=${encodeURIComponent(email)}`);
+
+      if (!checkResult.data?.available) {
+        emailStatus.textContent = "이미 등록된 이메일입니다";
+        emailStatus.className = "auth-verification-status error";
+        sendVerificationBtn.disabled = false;
+        return;
+      }
+
+      // 2. 이메일이 사용 가능하면 인증 코드 발송
+      emailStatus.textContent = "인증 코드 발송 중...";
+
       const result = await api.post("/auth/email/send", {
         email,
         type: "SIGNUP",
@@ -278,64 +467,51 @@ export function renderSignup(root) {
       password: "***",
     });
 
-    // ✅ 프론트 최소 검증
+    // 필수 항목 검증
     if (!username || !name || !nickname || !email || !status) {
       alert("필수 항목을 모두 입력해주세요");
-      console.log("누락된 필드:", {
-        username: !!username,
-        name: !!name,
-        nickname: !!nickname,
-        email: !!email,
-        status: !!status,
-      });
       return;
     }
 
+    // 아이디 중복 체크 완료 확인
+    if (!isUsernameValid) {
+      alert("아이디 중복 확인을 완료해주세요");
+      usernameInput.focus();
+      return;
+    }
+
+    // 닉네임 중복 체크 완료 확인
+    if (!isNicknameValid) {
+      alert("닉네임 중복 확인을 완료해주세요");
+      nicknameInput.focus();
+      return;
+    }
+
+    // 이메일 인증 완료 확인
     if (!isEmailVerified) {
       alert("이메일 인증을 완료해주세요");
+      emailInput.focus();
       return;
     }
 
-    // 사용자 이름, 이름, 닉네임 유효성 검증 (2자 이상 20자 이하)
-    if (username.length < 2 || username.length > 20) {
-      alert("아이디는 2자 이상 20자 이하 이어야 합니다");
-      return;
-    }
+    // 이름 길이 검증
     if (name.length < 2 || name.length > 20) {
       alert("이름은 2자 이상 20자 이하 이어야 합니다");
       return;
     }
-    if (nickname.length < 2 || nickname.length > 20) {
-      alert("닉네임은 2자 이상 20자 이하 이어야 합니다");
+
+    // 비밀번호 검증
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      alert("비밀번호는 영문자, 숫자, 특수기호를 포함해 8자 이상 20자 이하이어야 합니다");
+      passwordInput.focus();
       return;
     }
 
-    // 이메일 유효성 검증 (255자 이하)
-    if (email.length > 255) {
-      alert("이메일은 255자 이내여야 합니다");
-      return;
-    }
-
-    // 비밀번호 유효성 검증 (영문자, 숫자, 특수기호 포함 8자 이상 20자 이하)
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-
-    if (
-      password.length < 8 ||
-      password.length > 20 ||
-      !hasLetter ||
-      !hasNumber ||
-      !hasSpecial
-    ) {
-      alert(
-        "비밀번호는 영문자, 숫자, 특수기호를 포함해 8자 이상 20자 이하이어야 합니다"
-      );
-      return;
-    }
-
+    // 비밀번호 확인
     if (password !== password2) {
       alert("비밀번호 확인이 일치하지 않습니다");
+      password2Input.focus();
       return;
     }
 
