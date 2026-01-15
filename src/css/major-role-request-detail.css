@@ -201,3 +201,85 @@ body::-webkit-scrollbar-thumb {
   margin-top: 10px;
   border-left: 4px solid #fb7185;
 }
+
+.mj-card--accordion {
+  cursor: pointer;
+  padding: 0 !important; /* 요약 영역과 여백 조절을 위해 */
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.mj-accordion-summary {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+}
+
+.mj-accordion-summary:hover {
+  background: #f8fafc;
+}
+
+.mj-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mj-summary-title {
+  color: #475569;
+  font-size: 0.95rem;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mj-accordion-detail {
+  padding: 20px;
+  background: #fcfcfd;
+  border-top: 1px dashed #e2e8f0;
+  animation: slideDown 0.3s ease-out;
+}
+
+.mj-arrow-icon {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  transition: transform 0.3s;
+}
+
+.is-open .mj-arrow-icon {
+  transform: rotate(180deg);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 추가 스타일 */
+.mj-student-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+.mj-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-color: #edf2f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

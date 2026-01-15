@@ -18,14 +18,35 @@ export async function renderProfileDetail(root, { id }) {
   wrap.className = "pd-wrap";
 
   let profile = null;
+  let hasPendingInterview = false; // 신청 중 여부 상태값
+
+  const session = getSession();
+  const currentUser = session?.user;
+
   await withOverlayLoading(
     async () => {
       try {
-        const result = await api.get(`/major-profiles/${id}`);
-        if (result?.success) {
-          profile = result.data;
-        } else {
-          console.error("프로필 조회 실패:", result?.message);
+        // 1. 전공자 프로필 정보 조회
+        const profileRes = await api.get(`/major-profiles/${id}`);
+        if (profileRes?.success) {
+          profile = profileRes.data;
+        }
+
+        // 2. 내가 신청한 인터뷰 중 대기(PENDING) 상태가 있는지 조회
+        if (currentUser && profile) {
+          // 제공해주신 API: /members/me/interviews
+          // type=SENT (내가 보낸 것), status=PENDING (대기중)
+          const interviewRes = await api.get(
+            `/members/me/interviews?type=APPLIED&status=PENDING&size=100`
+          );
+
+          if (interviewRes?.success) {
+            const mySentItems = interviewRes.data || [];
+            // 현재 상세 페이지의 주인공(profile.memberId)에게 보낸 것이 있는지 확인
+            hasPendingInterview = mySentItems.some(
+              (item) => String(item.peer.memberId) === String(profile.memberId)
+            );
+          }
         }
       } catch (e) {
         console.error("서버 통신 오류", e);
@@ -157,25 +178,30 @@ export async function renderProfileDetail(root, { id }) {
       }
     });
 
+    const isOwner =
+      currentUser && String(currentUser.memberId) === String(p.memberId);
     const applyBtn = document.createElement("button");
     applyBtn.type = "button";
     applyBtn.className = "pd-apply-btn";
-    applyBtn.textContent = "인터뷰 신청하기";
-    applyBtn.addEventListener("click", async () => {
-      await withOverlayLoading(
-        async () => {
-          try {
-            openInterviewCreatePopup(p.memberId);
 
-            // 팝업이 뜨는 시간을 고려해 아주 짧은 지연을 주면 더 자연스럽습니다
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          } catch (e) {
-            console.error("팝업 오픈 실패", e);
-          }
-        },
-        { text: "신청 페이지를 불러오는 중..." }
-      );
-    });
+    if (isOwner) {
+      // 내 프로필일 때
+      applyBtn.textContent = "내 프로필입니다";
+      applyBtn.disabled = true;
+      applyBtn.classList.add("btn-disabled");
+    } else if (hasPendingInterview) {
+      // 이미 신청했을 때 (파스텔 그린 테마)
+      applyBtn.textContent = "신청중";
+      applyBtn.disabled = true;
+      applyBtn.style.backgroundColor = "#ebf7ed"; // 파스텔 그린 배경
+      applyBtn.style.color = "#2ecc71"; // 테마 포인트 색상
+      applyBtn.style.border = "1px solid #2ecc71";
+      applyBtn.style.cursor = "default";
+    } else {
+      // 신청 가능할 때
+      applyBtn.textContent = "인터뷰 신청하기";
+      applyBtn.onclick = () => openInterviewCreatePopup(p.memberId);
+    }
 
     // 우측 영역에 좋아요와 신청 버튼 배치
     cta.appendChild(likeBtn);
@@ -236,30 +262,42 @@ export async function renderProfileDetail(root, { id }) {
     const card = document.createElement("section");
     card.className = "card pd-bottom";
     card.innerHTML = `
-    <div class="pd-tabs-container">
-      <div class="pd-tabs">
-        <button class="pd-tab active" type="button" data-tab="review">후기</button>
-        <button class="pd-tab" type="button" data-tab="qna">Q&amp;A</button>
-      </div>
-      <div id="qnaActionArea" style="display: none;">
+    <div class="pd-tabs">
+      <button class="pd-tab active" type="button" data-tab="review">후기</button>
+      <button class="pd-tab" type="button" data-tab="qna">Q&A</button>
+    </div>
+    
+    <div class="pd-bottom-body">
+      <div id="qnaInputArea" style="display: none; padding: 20px; background-color: #f0fdf4; border-bottom: 1px solid #dcfce7;">
         ${
           !isOwner
-            ? `<button class="mj-btn-sm mj-btn--primary" id="askQuestionBtn">질문하기</button>`
-            : `<span class="mj-owner-tag">내 프로필 Q&A 관리</span>`
+            ? `
+          <div class="mj-qna-input-box">
+            <label class="mj-input-label" style="color: #16a34a;">전공자에게 질문하기</label>
+            <div class="mj-answer-input-container">
+              <textarea id="newQuestionText" class="mj-answer-textarea" 
+                style="border-color: #d1fae5;"
+                placeholder="궁금한 점을 질문해보세요!"></textarea>
+              <button type="button" id="submitQuestionBtn" class="mj-ans-submit" 
+                style="background-color: #2ecc71; color: white;">등록</button>
+            </div>
+          </div>
+        `
+            : `<div class="pd-muted" style="font-size: 0.9rem; text-align: center; color: #16a34a;">
+                내 프로필에 등록된 질문에 답변을 남길 수 있습니다.
+               </div>`
         }
       </div>
-    </div>
-    <div class="pd-bottom-body">
+      
       <div class="pd-list-wrap" id="pdList"></div>
       <div class="pagination" id="pdPager"></div>
     </div>
   `;
-
     card.addEventListener("click", (e) => {
       const tabBtn = e.target.closest("[data-tab]");
       if (tabBtn) {
         const tab = tabBtn.getAttribute("data-tab");
-        wrap.querySelector("#qnaActionArea").style.display =
+        wrap.querySelector("#qnaInputArea").style.display =
           tab === "qna" ? "block" : "none";
         state.tab = tabBtn.getAttribute("data-tab");
         state.page = 1;
@@ -271,8 +309,9 @@ export async function renderProfileDetail(root, { id }) {
         return;
       }
 
-      if (e.target.id === "askQuestionBtn") {
-        openQuestionForm(profile.memberId);
+      if (e.target.id === "submitQuestionBtn") {
+        const textEl = card.querySelector("#newQuestionText");
+        handleCreateQuestion(textEl.value);
       }
 
       const pageBtn = e.target.closest("[data-page]");
@@ -304,11 +343,11 @@ export async function renderProfileDetail(root, { id }) {
         try {
           const endpoint =
             state.tab === "review"
-              ? `/members/${profile.memberId}/reviews/received`
-              : `/members/${profile.memberId}/questions/received`;
+              ? `/majors/${profile.memberId}/reviews`
+              : `/majors/${profile.memberId}/qna`;
 
           const response = await api.get(
-            `${endpoint}?page=${state.page - 1}&size=${PAGE_SIZE}`
+            `${endpoint}?page=${state.page - 1}&size=${PAGE_SIZE}&type=RECEIVED`
           );
 
           if (response?.success) {
@@ -363,26 +402,26 @@ export async function renderProfileDetail(root, { id }) {
   }
 
   function renderReviewItem(item) {
-    const { student, review, createdAt } = item;
+    const { peer, review, updatedAt } = item;
     const row = document.createElement("div");
     row.className = "pd-item mj-review-row";
 
     // 별점 텍스트 생성
     const starsHtml = renderStars(review.rating);
-    const dateStr = new Date(createdAt).toLocaleDateString("ko-KR");
+    const dateStr = new Date(updatedAt).toLocaleDateString("ko-KR");
 
     row.innerHTML = `
       <div class="pd-item-top">
         <div class="mj-reviewer-info">
           <div class="mj-reviewer-avatar" style="background-image: url('${
-            student.profileImageUrl || ""
+            peer.profileImageUrl || ""
           }'); background-size: cover;">
-            ${!student.profileImageUrl ? "👤" : ""}
+            ${!peer.profileImageUrl ? "👤" : ""}
           </div>
           <div>
-            <div class="pd-item-title">${escapeHtml(student.nickname)} 
+            <div class="pd-item-title">${escapeHtml(peer.nickname)} 
               <span class="mj-reviewer-univ">${escapeHtml(
-                student.university
+                peer.university
               )}</span>
             </div>
             <div class="pd-stars">${starsHtml} <span class="mj-rating-num">${
@@ -404,116 +443,168 @@ export async function renderProfileDetail(root, { id }) {
     const session = getSession();
     const isOwner =
       session?.user && String(session.user.id) === String(profile.memberId);
-    const {
-      questionId,
-      studentNickname,
-      content,
-      hasAnswer,
-      answerContent,
-      createdAt,
-    } = item;
+
+    // 백엔드 데이터 구조에 맞게 변수 추출
+    const qId = item.questionId;
+    const studentNick = item.student?.nickname || "익명";
+    const studentUniv = item.student?.university || "";
+    const studentImg = item.student?.profileImageUrl || "";
+    const qContent = item.question?.content || "";
+    const aContent = item.answer?.content || "";
+    const createdAt = item.question?.createdAt || item.createdAt;
+    const hasAnswer = !!(item.answer && item.answer.content);
 
     const row = document.createElement("div");
+    // Review와 동일한 class 구조(pd-item)를 사용하여 디자인 통일
     row.className = "pd-item mj-qna-row";
+
+    const dateStr = createdAt
+      ? new Date(createdAt).toLocaleDateString("ko-KR")
+      : "";
 
     row.innerHTML = `
     <div class="pd-item-top">
-      <div class="mj-qna-info">
-        <span class="pd-item-title">Q. ${escapeHtml(studentNickname)}</span>
+      <div class="mj-reviewer-info">
+        <div class="mj-reviewer-avatar" style="background-image: url('${studentImg}');">
+          ${!studentImg ? "👤" : ""}
+        </div>
+        <div>
+          <div class="pd-item-title">
+            ${escapeHtml(studentNick)} 
+            <span class="mj-reviewer-univ">${escapeHtml(
+              item.student?.university || ""
+            )}</span>
+          </div>
+          <div class="mj-qna-badge-wrap">
+            <span class="mj-qna-status-badge" 
+                  style="background-color: ${
+                    hasAnswer ? "#ebf7ed" : "#f1f5f9"
+                  }; 
+                         color: ${hasAnswer ? "#2ecc71" : "#64748b"};">
+              ${hasAnswer ? "답변완료" : "답변대기"}
+            </span>
+          </div>
+        </div>
       </div>
-      <div class="pd-date">${new Date(createdAt).toLocaleDateString()}</div>
+      <div class="pd-date">${new Date(
+        item.question?.createdAt
+      ).toLocaleDateString()}</div>
     </div>
-    <div class="pd-item-content">${escapeHtml(content).replace(
-      /\n/g,
-      "<br>"
-    )}</div>
     
-    <div class="mj-answer-area" id="ans-${questionId}">
+    <div class="pd-item-content mj-qna-content">
+      <div class="mj-q-label" style="color: #2ecc71; font-weight: bold;">Q.</div>
+      <div class="mj-q-text">${escapeHtml(qContent).replace(
+        /\n/g,
+        "<br>"
+      )}</div>
+    </div>
+
+    <div class="mj-answer-section" id="ans-section-${qId}">
       ${
         hasAnswer
           ? `
-        <div class="mj-qna-answer-box">
-          <div class="mj-qna-a-label">A. 내 답변</div>
-          <div class="mj-qna-answer-content">${escapeHtml(
-            answerContent
-          ).replace(/\n/g, "<br>")}</div>
-          ${
-            isOwner
-              ? `<button class="mj-btn-text edit-ans" data-id="${questionId}">답변 수정</button>`
-              : ""
-          }
-        </div>
-      `
-          : `
-        ${
-          isOwner
-            ? `<button class="mj-btn mj-btn--sm mj-btn--ghost write-ans" data-id="${questionId}">답변 작성하기</button>`
-            : `<div class="mj-qna-pending">답변을 기다리는 중입니다.</div>`
-        }
-      `
+          <div class="mj-answer-box" style="background-color: #f9fdfa; border-left: 4px solid #2ecc71; padding: 12px; margin-top: 12px; border-radius: 4px;">
+            <div class="mj-answer-label" style="color: #16a34a; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">전공자 답변</div>
+            <div class="mj-answer-text">${escapeHtml(aContent).replace(
+              /\n/g,
+              "<br>"
+            )}</div>
+          </div>`
+          : isOwner
+          ? `
+          <div class="mj-answer-input-container" style="margin-top: 12px;">
+            <textarea id="textarea-${qId}" class="mj-answer-textarea" placeholder="답변을 입력해주세요..."></textarea>
+            <button type="button" class="mj-ans-submit" style="background-color: #2ecc71;">등록</button>
+          </div>`
+          : ""
       }
     </div>
   `;
 
-    // 답변 작성/수정 버튼 이벤트 바인딩
-    const actionBtn = row.querySelector(".write-ans, .edit-ans");
-    if (actionBtn) {
-      actionBtn.onclick = () =>
-        renderAnswerInput(questionId, hasAnswer ? answerContent : "", row);
+    // 이벤트 바인딩 (답변 등록 버튼)
+    if (isOwner && !hasAnswer) {
+      row.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("mj-ans-submit")) {
+          const textarea = row.querySelector(`#textarea-${qId}`);
+          await submitAnswer(qId, textarea.value);
+        }
+      });
     }
 
     return row;
   }
 
-  function renderAnswerInput(qId, existing, parentRow) {
-    const area = parentRow.querySelector(`#ans-${qId}`);
-    area.innerHTML = `
-    <div class="mj-answer-edit-form">
-      <textarea class="mj-textarea" id="input-${qId}" rows="3">${existing}</textarea>
-      <div class="mj-btn-group">
-        <button class="mj-btn-sm mj-btn--ghost" onclick="renderBottom()">취소</button>
-        <button class="mj-btn-sm mj-btn--primary" id="save-${qId}">저장</button>
+  function renderAnswerBox(answer, isOwner, qId) {
+    return `
+    <div class="mj-answer-box">
+      <div class="mj-answer-header">
+        <span class="mj-answer-label">전공자 답변</span>
       </div>
+      <div class="mj-answer-text">${escapeHtml(answer).replace(
+        /\n/g,
+        "<br>"
+      )}</div>
     </div>
   `;
+  }
 
-    area.querySelector(`#save-${qId}`).onclick = async () => {
-      const content = area.querySelector(`#input-${qId}`).value;
-      await withOverlayLoading(async () => {
+  // 2. 전공자(주인)에게만 보이는 답변 입력창 (텍스트 + 오른쪽 버튼)
+  function renderAnswerInput(qId) {
+    return `
+    <div class="mj-answer-input-container">
+      <textarea id="textarea-${qId}" class="mj-answer-textarea" placeholder="답변을 입력해주세요..."></textarea>
+      <button type="button" class="mj-ans-submit">등록</button>
+    </div>
+  `;
+  }
+
+  async function submitAnswer(questionId, content) {
+    if (!content.trim()) return alert("내용을 입력해주세요.");
+
+    await withOverlayLoading(async () => {
+      try {
+        const res = await api.post(`/questions/${questionId}/answer`, {
+          content,
+        });
+        if (res.success) {
+          showOverlayCheck({ text: "답변이 등록되었습니다." });
+          renderBottom(); // 목록 새로고침
+        }
+      } catch (e) {
+        console.error(e);
+        alert("답변 등록에 실패했습니다.");
+      }
+    });
+  }
+
+  async function handleCreateQuestion(content) {
+    if (!content.trim()) {
+      alert("질문 내용을 입력해주세요.");
+      return;
+    }
+
+    await withOverlayLoading(
+      async () => {
         try {
-          const res = await api.post(`/questions/${questionId}/answer`, {
-            content,
+          // profile.memberId는 상세페이지 주인의 ID
+          const res = await api.post(`/majors/${profile.memberId}/questions`, {
+            content: content,
           });
+
           if (res.success) {
-            showOverlayCheck({ text: "답변이 저장되었습니다." });
+            showOverlayCheck({ text: "질문이 성공적으로 등록되었습니다." });
+            // 입력창 초기화
+            const textEl = document.getElementById("newQuestionText");
+            if (textEl) textEl.value = "";
+            // 목록 새로고침
             renderBottom();
           }
         } catch (e) {
-          alert("답변 저장 실패");
-        }
-      });
-    };
-  }
-
-  function openQuestionForm(majorId) {
-    const content = prompt("전공자에게 궁금한 점을 남겨주세요 (최대 500자)");
-    if (!content || content.trim() === "") return;
-
-    withOverlayLoading(
-      async () => {
-        try {
-          const res = await api.post(`/majors/${majorId}/questions`, {
-            content,
-          });
-          if (res.success) {
-            showOverlayCheck({ text: "질문이 등록되었습니다." });
-            renderBottom(); // 목록 새로고침
-          }
-        } catch (e) {
-          alert("질문 등록에 실패했습니다.");
+          console.error("질문 등록 실패:", e);
+          alert("질문 등록 중 오류가 발생했습니다.");
         }
       },
-      { text: "질문 등록 중..." }
+      { text: "질문을 등록하는 중..." }
     );
   }
 

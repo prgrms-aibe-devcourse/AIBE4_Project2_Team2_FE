@@ -294,51 +294,95 @@
   }
 }
 
-/* Q&A 전용 스타일 예시 */
-.mj-qna-row {
-  border-left: 4px solid #e2e8f0;
-  padding-left: 1rem;
+/* QnA 상태 배지 스타일 */
+.mj-qna-status-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
 }
-.mj-qna-answer-box {
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
+.mj-qna-status-badge.is-pending {
+  background-color: #fff7ed;
+  color: #ea580c; /* 오렌지색 (대기중) */
+}
+.mj-qna-status-badge.is-success {
+  background-color: #f0fdf4;
+  color: #16a34a; /* 파스텔 그린 (완료) */
+}
+
+/* 질문 내용 스타일 */
+.mj-qna-content {
+  display: flex;
+  gap: 8px;
   margin-top: 10px;
-  font-size: 0.95rem;
 }
-.mj-qna-a-label {
+.mj-q-label {
   color: #3b82f6;
   font-weight: bold;
-  margin-bottom: 5px;
-  display: block;
+  flex-shrink: 0;
 }
-.mj-qna-pending {
-  color: #94a3b8;
-  font-size: 0.85rem;
-  margin-top: 8px;
-  font-style: italic;
-}
-/* Q&A 전용 스타일 예시 */
-.mj-qna-row {
-  border-left: 4px solid #e2e8f0;
-  padding-left: 1rem;
-}
-.mj-qna-answer-box {
-  background: #f8fafc;
+
+/* 답변 박스 디자인 */
+.mj-answer-box {
+  margin-top: 12px;
   padding: 12px;
+  background-color: #f8fafc;
   border-radius: 8px;
-  margin-top: 10px;
-  font-size: 0.95rem;
+  border-left: 4px solid #cbd5e1;
 }
-.mj-qna-a-label {
-  color: #3b82f6;
+.mj-answer-label {
+  font-size: 0.8rem;
   font-weight: bold;
-  margin-bottom: 5px;
+  color: #64748b;
   display: block;
+  margin-bottom: 4px;
 }
-.mj-qna-pending {
-  color: #94a3b8;
+
+/* Q&A 입력 영역 컨테이너 */
+.mj-qna-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mj-input-label {
   font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* 텍스트 영역: pd-item의 테두리와 유사한 느낌 */
+.mj-answer-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  resize: none;
+  background-color: #ffffff;
+  transition: border-color 0.2s;
+}
+
+.mj-answer-textarea:focus {
+  outline: none;
+  border-color: #3b82f6; /* 포인트 컬러 */
+}
+
+/* 질문 등록 버튼: 인터뷰 신청하기 버튼과 유사한 스타일 */
+.mj-ans-submit {
+  align-self: flex-end;
   margin-top: 8px;
-  font-style: italic;
+  padding: 8px 20px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.mj-ans-submit:hover {
+  opacity: 0.9;
 }
