@@ -117,17 +117,22 @@ export async function updateMe(payload) {
 
 /*
   프로필 이미지 업로드
-  - FormData 전송 처리(api.postForm 사용)
+  - FormData 전송 처리(api.putForm 사용)
 */
 export async function uploadProfileImage(file) {
   const fd = new FormData();
   fd.append("file", file);
 
-  const res = await api.postForm("/members/me/profile-image", fd, {
+  const res = await api.putForm("/members/me/profile-image", fd, {
     headers: {}, // Content-Type 자동 설정 전제
   });
 
   return assertSuccess(res, "프로필 이미지 업로드에 실패했습니다").data;
+}
+
+export async function deleteProfileImage() {
+  const res = await api.delete("/members/me/profile-image");
+  return assertSuccess(res, "프로필 이미지 삭제에 실패했습니다").data;
 }
 
 /* =========================

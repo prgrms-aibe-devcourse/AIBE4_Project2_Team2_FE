@@ -20,7 +20,7 @@ import {
   getPasswordRuleMessage,
   getNewPasswordConfirmMessage,
 } from "../utils/validation.js";
-import { updateMe, uploadProfileImage } from "../api.js";
+import { updateMe, uploadProfileImage, deleteProfileImage } from "../api.js";
 
 const USER_KEY = "mm_user";
 
@@ -701,7 +701,16 @@ function bindProfileImage(state) {
       try {
         startOverlayLoading();
 
-        const updated = await updateMe({ profileImageUrl: "" });
+        const updated = await deleteProfileImage(); // 핵심: DELETE 호출
+
+        // 서버가 null로 내려줄 수도 있으니 프론트에서 빈 값 정규화
+        if (
+          updated &&
+          (updated.profileImageUrl === null ||
+            updated.profileImageUrl === undefined)
+        ) {
+          updated.profileImageUrl = "";
+        }
 
         state.me = updated;
 
@@ -710,7 +719,12 @@ function bindProfileImage(state) {
 
         const prev = readUser();
         const next = mergeUser(prev, updated);
-        if (!updated?.profileImageUrl) next.profileImageUrl = "";
+
+        // mergeUser가 null을 덮어쓰지 못하는 케이스 방지
+        next.profileImageUrl = updated?.profileImageUrl
+          ? String(updated.profileImageUrl)
+          : "";
+
         writeUser(next);
         dispatchUserUpdated(next);
 
