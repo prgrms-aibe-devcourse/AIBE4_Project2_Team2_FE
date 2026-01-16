@@ -11,10 +11,10 @@ import { api } from "../../services/api.js";
 
 export const MYPAGE_TABS = [
   { key: "profile", label: "내 정보 수정" },
-  { key: "applied", label: "내가 신청한 인터뷰" },
-  { key: "completed", label: "완료된 인터뷰" },
-  { key: "reviews", label: "내가 작성한 후기" },
-  { key: "qna", label: "내가 작성한 질문" },
+  { key: "applied", label: "신청한 인터뷰" },
+  { key: "completed", label: "후기 작성하기" },
+  { key: "reviews", label: "작성한 후기" },
+  { key: "qna", label: "Q&A" },
 ];
 
 const STORAGE_KEY = "mypage.activeTab";

@@ -11,16 +11,32 @@
   background: rgba(255, 255, 255, 0.7);
 }
 
-.mm-review__stars {
-  font-size: 18px;
-  line-height: 1;
-}
-
+/* 별점 */
+.mm-review__stars,
 .mm-review__stars .star {
   font-size: 18px;
   line-height: 1;
 }
 
+.mm-review__stars .star {
+  color: rgba(45, 45, 58, 0.18);
+}
+
+/* 활성 별 */
+.mm-review__stars .star.on,
+.mm-review__stars .star.is-on,
+.mm-review__stars [data-on="true"] {
+  color: #fbbf24;
+}
+
+/* 비활성 별(구현에 따라 대응) */
+.mm-review__stars .star.is-off,
+.mm-review__stars [data-off="true"] {
+  color: rgba(45, 45, 58, 0.18);
+  opacity: 0.25;
+}
+
+/* 카드 헤더 */
 .mm-card__head--review {
   align-items: center;
 }
@@ -37,11 +53,10 @@
 }
 
 .mm-review__stars--inline {
-  font-size: 18px;
-  line-height: 1;
   margin: 0;
 }
 
+/* 날짜 라벨 */
 :root {
   --mm-label-text: rgba(45, 45, 58, 0.66);
   --mm-label-bg: rgba(45, 45, 58, 0.06);

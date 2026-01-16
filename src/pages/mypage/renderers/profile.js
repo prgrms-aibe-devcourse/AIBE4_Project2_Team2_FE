@@ -31,16 +31,10 @@ const STATUS_OPTIONS = [
   { value: "ETC", label: "기타" },
 ];
 
-/*
-  희망 상태 판정
-*/
 function isWishStatus(status) {
   return status === "HIGH_SCHOOL" || status === "ETC";
 }
 
-/*
-  최소 HTML 이스케이프 처리
-*/
 function escapeHtml(s) {
   return String(s ?? "")
     .replaceAll("&", "&amp;")
@@ -50,9 +44,6 @@ function escapeHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
-/*
-  로컬 사용자 캐시 조회
-*/
 function readUser() {
   try {
     const raw = localStorage.getItem(USER_KEY);
@@ -62,9 +53,6 @@ function readUser() {
   }
 }
 
-/*
-  로컬 사용자 캐시 저장
-*/
 function writeUser(user) {
   try {
     if (!user) localStorage.removeItem(USER_KEY);
@@ -72,9 +60,6 @@ function writeUser(user) {
   } catch {}
 }
 
-/*
-  사용자 갱신 이벤트 발행
-*/
 function dispatchUserUpdated(user) {
   try {
     window.dispatchEvent(
@@ -83,9 +68,6 @@ function dispatchUserUpdated(user) {
   } catch {}
 }
 
-/*
-  아바타 적용 처리
-*/
 function applyAvatar(el, url) {
   if (!el) return;
 
@@ -104,27 +86,18 @@ function applyAvatar(el, url) {
   el.style.backgroundRepeat = "no-repeat";
 }
 
-/*
-  오류 메시지 설정 처리
-*/
 function setError(id, message) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = message ? String(message) : "";
 }
 
-/*
-  입력 invalid 스타일 토글 처리
-*/
 function setInvalid(id, on) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle("is-invalid", Boolean(on));
 }
 
-/*
-  모든 오류/invalid 초기화 처리
-*/
 function clearErrors() {
   const ids = [
     "err_form",
@@ -150,9 +123,6 @@ function clearErrors() {
   for (const id of inputs) setInvalid(id, false);
 }
 
-/*
-  서버 응답 기반 필드 오류 적용 처리
-*/
 function applyValidationErrors(errData) {
   const map = {
     nickname: ["err_nickname", "nickname"],
@@ -233,9 +203,6 @@ function applyValidationErrors(errData) {
   setError("err_form", msg);
 }
 
-/*
-  클라이언트 검증 오류 적용 처리
-*/
 function applyClientFieldErrors(fieldErrors, fallbackMessage) {
   if (!fieldErrors || typeof fieldErrors !== "object") {
     const msg = fallbackMessage || "입력값을 확인해 주세요.";
@@ -275,9 +242,6 @@ function applyClientFieldErrors(fieldErrors, fallbackMessage) {
   }
 }
 
-/*
-  라벨 동기화 처리
-*/
 function syncWishLabels(status) {
   const uniLabel = document.getElementById("labelUniversity");
   const majorLabel = document.getElementById("labelMajor");
@@ -287,9 +251,6 @@ function syncWishLabels(status) {
   if (majorLabel) majorLabel.textContent = wish ? "희망 학과" : "학과";
 }
 
-/*
-  상태 옵션 초기화 처리
-*/
 function ensureStatusOptions(selectEl) {
   if (!selectEl) return;
   if (selectEl.options && selectEl.options.length > 0) return;
@@ -302,9 +263,6 @@ function ensureStatusOptions(selectEl) {
   }
 }
 
-/*
-  로컬 사용자 캐시 병합 처리
-*/
 function mergeUser(prev, updated) {
   const p = prev && typeof prev === "object" ? prev : {};
   const u = updated && typeof updated === "object" ? updated : {};
@@ -325,9 +283,6 @@ function mergeUser(prev, updated) {
   };
 }
 
-/*
-  학적 요약 문자열 생성 처리
-*/
 function formatAcademicLine(status, university, major) {
   const u = String(university || "").trim();
   const m = String(major || "").trim();
@@ -339,18 +294,12 @@ function formatAcademicLine(status, university, major) {
   return `${base} 희망`;
 }
 
-/*
-  요약 텍스트 반영 처리
-*/
 function updateProfileSummaryFromState(me) {
   const el = document.getElementById("mypageSummary");
   if (!el) return;
   el.textContent = formatAcademicLine(me?.status, me?.university, me?.major);
 }
 
-/*
-  로컬 계정 여부 판정 처리
-*/
 function isLocalUser(me) {
   const provider = me?.authProvider ?? null;
 
@@ -373,9 +322,6 @@ function isLocalUser(me) {
   return true;
 }
 
-/*
-  프로필 탭 템플릿 생성
-*/
 function template(me) {
   const safeName = escapeHtml(me?.name || "");
   const safeUsername = escapeHtml(me?.username || "");
@@ -460,6 +406,8 @@ function template(me) {
         </div>
       </div>
 
+      <div class="mypage-divider mypage-divider--dashed" aria-hidden="true"></div>
+
       ${
         isLocal
           ? `
@@ -501,9 +449,6 @@ function template(me) {
   `;
 }
 
-/*
-  프로필 탭 렌더링 진입점
-*/
 export function renderProfileTab(state) {
   const listEl = document.getElementById("mypageList");
   const pagerEl = document.getElementById("mypagePagination");
@@ -544,9 +489,6 @@ export function renderProfileTab(state) {
   bindLiveValidation(state);
 }
 
-/*
-  프로필 저장 처리
-*/
 function bindProfileForm(state) {
   const form = document.getElementById("mypageForm");
   if (!form) return;
@@ -644,9 +586,6 @@ function bindProfileForm(state) {
   });
 }
 
-/*
-  프로필 이미지 업로드/삭제 처리
-*/
 function bindProfileImage(state) {
   const btnChange = document.getElementById("btnProfileImageChange");
   const btnDelete = document.getElementById("btnProfileImageDelete");
@@ -701,9 +640,8 @@ function bindProfileImage(state) {
       try {
         startOverlayLoading();
 
-        const updated = await deleteProfileImage(); // 핵심: DELETE 호출
+        const updated = await deleteProfileImage();
 
-        // 서버가 null로 내려줄 수도 있으니 프론트에서 빈 값 정규화
         if (
           updated &&
           (updated.profileImageUrl === null ||
@@ -719,8 +657,6 @@ function bindProfileImage(state) {
 
         const prev = readUser();
         const next = mergeUser(prev, updated);
-
-        // mergeUser가 null을 덮어쓰지 못하는 케이스 방지
         next.profileImageUrl = updated?.profileImageUrl
           ? String(updated.profileImageUrl)
           : "";
@@ -744,9 +680,6 @@ function bindProfileImage(state) {
   }
 }
 
-/*
-  라이브 검증 처리
-*/
 function bindLiveValidation(state) {
   const nick = document.getElementById("nickname");
   if (!nick) return;

@@ -7,11 +7,12 @@
 */
 
 import { escapeHtml, escapeAttr } from "../utils/dom.js";
-import { renderStars, formatDateTime } from "../utils/format.js";
+import { renderStars } from "../utils/format.js";
 
 let mounted = false;
 
 export function ensureReviewDetailModal() {
+  if (document.getElementById("reviewDetailModal")) return;
   if (mounted) return;
   mounted = true;
 
@@ -63,9 +64,6 @@ export function closeReviewDetailModal() {
   if (body) resetBodyScroll(body);
 }
 
-/*
-  상세 내용 HTML 생성 처리
-*/
 function renderDetail(item) {
   const peer = item?.peer || {};
   const review = item?.review || {};
@@ -79,37 +77,30 @@ function renderDetail(item) {
   }${safeText(peer?.major, "")}`.trim();
 
   const rating = Number(review?.rating || 0);
-  const content = safeText(review?.content, "");
+  const content = safeText(review?.content, "-");
 
-  const reviewCreatedAt = formatDateTime(item?.createdAt) || "-";
-  const reviewUpdatedAt = formatDateTime(item?.updatedAt) || "-";
-  const reviewEdited = hasMeaningfulUpdate(item?.createdAt, item?.updatedAt);
+  const statusRaw = String(interview?.status || "").trim();
 
-  const interviewCreatedAt = formatDateTime(interview?.createdAt) || "-";
-  const interviewUpdatedAt = formatDateTime(interview?.updatedAt) || "-";
-  const interviewStatus = String(interview?.status || "").trim();
+  const createdAt = formatDateTime(item?.createdAt) || "-";
+  const updatedAt = formatDateTime(item?.updatedAt) || "-";
+  const edited = hasMeaningfulUpdate(item?.createdAt, item?.updatedAt);
 
-  const interviewHasCompleted = Boolean(interview?.updatedAt);
-
-  const reviewDateLine = reviewEdited
+  const dateLine = edited
     ? `<span class="mm-date-label">작성일</span> ${escapeHtml(
-        reviewCreatedAt
-      )} · <span class="mm-date-label">수정일</span> ${escapeHtml(reviewUpdatedAt)}`
-    : `<span class="mm-date-label">작성일</span> ${escapeHtml(reviewCreatedAt)}`;
+        createdAt
+      )} · <span class="mm-date-label">수정일</span> ${escapeHtml(updatedAt)}`
+    : `<span class="mm-date-label">작성일</span> ${escapeHtml(createdAt)}`;
 
-  const interviewDateLine = interviewHasCompleted
-    ? `<span class="mm-date-label">신청일</span> ${escapeHtml(
-        interviewCreatedAt
-      )} · <span class="mm-date-label">완료일</span> ${escapeHtml(interviewUpdatedAt)}`
-    : `<span class="mm-date-label">신청일</span> ${escapeHtml(interviewCreatedAt)}`;
+  const dateTitle = edited
+    ? `작성일 ${createdAt} · 수정일 ${updatedAt}`
+    : `작성일 ${createdAt}`;
 
-  const reviewDateTitle = reviewEdited
-    ? `작성일 ${reviewCreatedAt} · 수정일 ${reviewUpdatedAt}`
-    : `작성일 ${reviewCreatedAt}`;
-
-  const interviewDateTitle = interviewHasCompleted
-    ? `신청일 ${interviewCreatedAt} · 완료일 ${interviewUpdatedAt}`
-    : `신청일 ${interviewCreatedAt}`;
+  const title = safeText(interview?.title, "-");
+  const interviewContent = safeText(interview?.content, "-");
+  const method = safeText(interview?.interviewMethod, "-");
+  const preferredDatetime = formatDateTime(interview?.preferredDatetime) || "-";
+  const extraDescription = safeText(interview?.extraDescription, "-");
+  const majorMessage = safeText(interview?.majorMessage, "-");
 
   return `
     <div class="mm-modal__stack">
@@ -133,18 +124,18 @@ function renderDetail(item) {
 
           <div class="mm-hero2__badge">
             ${
-              interviewStatus
+              statusRaw
                 ? `<div class="mm-badge" data-tone="dark">${escapeHtml(
-                    interviewStatus
+                    statusRaw
                   )}</div>`
                 : ""
             }
           </div>
 
           <div class="mm-hero2__dates mm-hero2__dates--inline" title="${escapeAttr(
-            interviewDateTitle
+            dateTitle
           )}">
-            ${interviewDateLine}
+            ${dateLine}
           </div>
         </div>
       </div>
@@ -157,28 +148,24 @@ function renderDetail(item) {
           <div class="mm-kv2">
             <div class="mm-kv2__row">
               <div class="mm-kv2__k">제목</div>
-              <div class="mm-kv2__v">${escapeHtml(interview?.title || "-")}</div>
+              <div class="mm-kv2__v">${escapeHtml(title)}</div>
             </div>
 
             <div class="mm-kv2__row">
               <div class="mm-kv2__k">내용</div>
               <div class="mm-kv2__v mm-pre">${escapeHtml(
-                interview?.content || "-"
+                interviewContent
               )}</div>
             </div>
 
             <div class="mm-kv2__row">
               <div class="mm-kv2__k">진행 방식</div>
-              <div class="mm-kv2__v">${escapeHtml(
-                interview?.interviewMethod || "-"
-              )}</div>
+              <div class="mm-kv2__v">${escapeHtml(method)}</div>
             </div>
 
             <div class="mm-kv2__row">
               <div class="mm-kv2__k">희망 일시</div>
-              <div class="mm-kv2__v">${escapeHtml(
-                formatDateTime(interview?.preferredDatetime) || "-"
-              )}</div>
+              <div class="mm-kv2__v">${escapeHtml(preferredDatetime)}</div>
             </div>
 
             ${
@@ -187,7 +174,7 @@ function renderDetail(item) {
               <div class="mm-kv2__row">
                 <div class="mm-kv2__k">추가 설명</div>
                 <div class="mm-kv2__v mm-pre">${escapeHtml(
-                  interview?.extraDescription
+                  extraDescription
                 )}</div>
               </div>
               `
@@ -200,7 +187,7 @@ function renderDetail(item) {
               <div class="mm-kv2__row">
                 <div class="mm-kv2__k">전공자 메시지</div>
                 <div class="mm-kv2__v mm-pre">${escapeHtml(
-                  interview?.majorMessage
+                  majorMessage
                 )}</div>
               </div>
               `
@@ -222,19 +209,19 @@ function renderDetail(item) {
           </div>
 
           <div class="mm-card__head-right mm-review__dates mm-review__dates--top" title="${escapeAttr(
-            reviewDateTitle
+            dateTitle
           )}">
-            ${reviewDateLine}
+            ${dateLine}
           </div>
         </div>
 
         <div class="mm-review">
-          <div class="mm-review__content mm-pre">${escapeHtml(content || "-")}</div>
+          <div class="mm-review__content mm-pre">${escapeHtml(content)}</div>
 
           <div class="mm-review__dates mm-review__dates--below" title="${escapeAttr(
-            reviewDateTitle
+            dateTitle
           )}">
-            ${reviewDateLine}
+            ${dateLine}
           </div>
         </div>
       </div>
@@ -243,17 +230,19 @@ function renderDetail(item) {
   `;
 }
 
-/*
-  문자열 기본값 처리
-*/
 function safeText(v, fallback) {
   const s = String(v ?? "").trim();
   return s ? s : fallback ?? "";
 }
 
-/*
-  createdAt/updatedAt 의미 있는 변경 판단 처리
-*/
+function formatDateTime(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  if (s.length >= 16) return s.slice(0, 16).replace("T", " ");
+  if (s.length >= 10) return s.slice(0, 10);
+  return s;
+}
+
 function hasMeaningfulUpdate(createdAt, updatedAt) {
   const cKey = toComparableKey(createdAt);
   const uKey = toComparableKey(updatedAt);
@@ -262,9 +251,6 @@ function hasMeaningfulUpdate(createdAt, updatedAt) {
   return uKey !== cKey;
 }
 
-/*
-  날짜 문자열 비교용 키 생성 처리
-*/
 function toComparableKey(dt) {
   const s = String(dt || "").trim();
   if (!s) return "";
@@ -276,9 +262,6 @@ function toComparableKey(dt) {
   return frac ? `${base}.${frac}` : base;
 }
 
-/*
-  모달 바디 스크롤 최상단 초기화 처리
-*/
 function resetBodyScroll(body) {
   if (!body) return;
   body.scrollTop = 0;
