@@ -47,23 +47,23 @@ export async function renderMajorProfile(root) {
   let initialTab = isAccepted ? "profile" : "request"; // 기본값
   // 요청된 탭이 존재하고, '인증된 사용자'만 갈 수 있는 탭이라면 isAccepted 체크
   if (requestedTab) {
-      const protectedTabs = ["profile", "interviews", "qna", "review"];
-      
-      // 보호된 탭인데 인증받은 경우 OR 보호되지 않은 탭인 경우 -> 이동 허용
-      if (protectedTabs.includes(requestedTab)) {
-          if (isAccepted) {
-              initialTab = requestedTab;
-          }
-      } else {
-          // 그 외 탭(존재한다면)
-          initialTab = requestedTab;
+    const protectedTabs = ["profile", "interviews", "qna", "review"];
+
+    // 보호된 탭인데 인증받은 경우 OR 보호되지 않은 탭인 경우 -> 이동 허용
+    if (protectedTabs.includes(requestedTab)) {
+      if (isAccepted) {
+        initialTab = requestedTab;
       }
+    } else {
+      // 그 외 탭(존재한다면)
+      initialTab = requestedTab;
+    }
   }
 
   const wrap = document.createElement("div");
   wrap.className = "mj-container";
 
-wrap.innerHTML = `
+  wrap.innerHTML = `
     <header class="mj-header">
       <div class="mj-header__main">
         <div class="mj-avatar" style="background-image: url('${
@@ -120,9 +120,9 @@ wrap.innerHTML = `
     // 1. 인증 상태에 따라 비활성화 클래스 처리
     const target = tab.dataset.tab;
     const protectedTabs = ["profile", "interviews", "qna", "review"];
-    
+
     if (protectedTabs.includes(target) && !isAccepted) {
-        tab.classList.add("is-disabled");
+      tab.classList.add("is-disabled");
     }
 
     tab.onclick = async () => {
@@ -147,7 +147,7 @@ wrap.innerHTML = `
   });
 
   // 모든 탭에서 active 제거 후 initialTab에만 추가
-  tabs.forEach(t => t.classList.remove("is-active"));
+  tabs.forEach((t) => t.classList.remove("is-active"));
   const activeTabBtn = wrap.querySelector(`.mj-tab[data-tab="${initialTab}"]`);
   if (activeTabBtn) activeTabBtn.classList.add("is-active");
 
@@ -316,7 +316,7 @@ function renderEditMode(container, profile, user) {
           <label class="mj-label">한 줄 소개</label>
           <input type="text" id="title" class="mj-input" 
             value="${isEdit ? profile.title || "" : ""}" 
-            placeholder="예: 소통하는 개발자 OOO입니다." required>
+            placeholder="예: 후배들을 위해 노력하겠습니다! 부담없이 신청해주세요." required>
         </div>
 
         <div class="mj-form-group">

@@ -41,13 +41,13 @@ export async function renderInterviewCreate(root, { id }) {
         <div class="mj-form-group">
           <label for="content" class="mj-label">주요 인터뷰 내용 <span class="required">*</span></label>
           <textarea id="content" name="content" class="mj-textarea" rows="5" maxlength="5000"
-            placeholder="인터뷰에서 다룰 주요 주제나 답변 가능한 범위를 작성해주세요." required></textarea>
+            placeholder="인터뷰에서 다룰 주요 주제나 범위를 작성해주세요." required></textarea>
         </div>
 
         <div class="mj-form-group">
           <label for="extraDescription" class="mj-label">추가 전달 사항 (선택)</label>
           <textarea id="extraDescription" name="extraDescription" class="mj-textarea" rows="3" maxlength="2000"
-            placeholder="준비물이나 사전 질문지 요청 등 학생이 미리 알아야 할 사항이 있다면 적어주세요."></textarea>
+            placeholder="..."></textarea>
         </div>
 
         <div class="mj-popup-actions">
