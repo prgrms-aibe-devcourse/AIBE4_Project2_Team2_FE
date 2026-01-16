@@ -1,5 +1,6 @@
 import { navigate } from "../router.js";
 import { api, ApiError } from "../services/api.js";
+import { startOverlayLoading, endOverlayLoading } from "../utils/overlay.js";
 
 export function renderSignup(root) {
   const wrap = document.createElement("div");
@@ -425,6 +426,7 @@ export function renderSignup(root) {
 
   // 소셜 로그인 버튼
   googleSignupBtn.addEventListener("click", () => {
+    startOverlayLoading({ text: "Google 회원가입 중..." });
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
@@ -432,6 +434,7 @@ export function renderSignup(root) {
   });
 
   githubSignupBtn.addEventListener("click", () => {
+    startOverlayLoading({ text: "GitHub 회원가입 중..." });
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
@@ -439,6 +442,7 @@ export function renderSignup(root) {
   });
 
   kakaoSignupBtn.addEventListener("click", () => {
+    startOverlayLoading({ text: "Kakao 회원가입 중..." });
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
@@ -515,6 +519,8 @@ export function renderSignup(root) {
       return;
     }
 
+    startOverlayLoading({ text: "회원가입 중..." });
+
     try {
       const signupData = {
         username,
@@ -531,6 +537,8 @@ export function renderSignup(root) {
 
       console.log("회원가입 응답:", result);
 
+      endOverlayLoading();
+
       if (!result.success) {
         alert(result.message || "회원가입 실패");
         return;
@@ -539,6 +547,7 @@ export function renderSignup(root) {
       alert("회원가입 완료");
       navigate("/login");
     } catch (error) {
+      endOverlayLoading();
       console.error("회원가입 에러:", error);
       console.error("에러 상세:", error.data);
 

@@ -1,5 +1,6 @@
 import { navigate } from "../router.js";
 import { isLoggedIn, login } from "../auth/auth.js";
+import { startOverlayLoading, endOverlayLoading } from "../utils/overlay.js";
 
 function enableAuthPageMode(root) {
   const page = root.closest(".page");
@@ -117,6 +118,7 @@ export function renderLogin(root) {
   });
 
   googleLoginBtn.addEventListener("click", () => {
+    startOverlayLoading({ text: "Google 로그인 중..." });
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
@@ -124,6 +126,7 @@ export function renderLogin(root) {
   });
 
   githubLoginBtn.addEventListener("click", () => {
+    startOverlayLoading({ text: "GitHub 로그인 중..." });
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
@@ -131,6 +134,7 @@ export function renderLogin(root) {
   });
 
   kakaoLoginBtn.addEventListener("click", () => {
+    startOverlayLoading({ text: "Kakao 로그인 중..." });
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
     const backendUrl = apiBaseUrl.replace(/\/api$/, "");
@@ -141,10 +145,14 @@ export function renderLogin(root) {
     e.preventDefault();
     const fd = new FormData(form);
 
+    startOverlayLoading({ text: "로그인 중..." });
+
     const res = await login({
       username: String(fd.get("username") || "").trim(),
       password: String(fd.get("password") || ""),
     });
+
+    endOverlayLoading();
 
     if (!res.ok) {
       alert(res.message || "로그인에 실패했습니다");

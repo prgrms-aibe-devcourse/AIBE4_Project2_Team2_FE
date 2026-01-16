@@ -1,5 +1,6 @@
 import { navigate } from "../router.js";
 import { api, ApiError } from "../services/api.js";
+import { startOverlayLoading, endOverlayLoading } from "../utils/overlay.js";
 
 export function renderFindPassword(root) {
   const wrap = document.createElement("div");
@@ -329,7 +330,7 @@ export function renderFindPassword(root) {
     }
 
     resetPasswordBtn.disabled = true;
-    resetPasswordBtn.textContent = "변경 중...";
+    startOverlayLoading({ text: "비밀번호 변경 중..." });
 
     try {
       const result = await api.post("/auth/reset-password", {
@@ -339,15 +340,17 @@ export function renderFindPassword(root) {
         newPassword
       });
 
+      endOverlayLoading();
+
       if (result.success) {
         alert("비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.");
         navigate("/login");
       } else {
         alert(result.message || "비밀번호 변경 실패");
         resetPasswordBtn.disabled = false;
-        resetPasswordBtn.textContent = "비밀번호 변경";
       }
     } catch (error) {
+      endOverlayLoading();
       console.error("비밀번호 변경 에러:", error);
 
       let errorMessage = "서버 오류";
@@ -356,7 +359,6 @@ export function renderFindPassword(root) {
       }
       alert(errorMessage);
       resetPasswordBtn.disabled = false;
-      resetPasswordBtn.textContent = "비밀번호 변경";
     }
   });
 

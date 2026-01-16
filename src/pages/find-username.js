@@ -1,5 +1,6 @@
 import { navigate } from "../router.js";
 import { api, ApiError } from "../services/api.js";
+import { startOverlayLoading, endOverlayLoading } from "../utils/overlay.js";
 
 export function renderFindUsername(root) {
   const wrap = document.createElement("div");
@@ -93,14 +94,15 @@ export function renderFindUsername(root) {
     }
 
     sendVerificationBtn.disabled = true;
-    emailStatus.textContent = "발송 중...";
-    emailStatus.className = "auth-verification-status";
+    startOverlayLoading({ text: "인증 코드 발송 중..." });
 
     try {
       const result = await api.post("/auth/email/send", {
         email,
         type: "FIND_USERNAME"
       });
+
+      endOverlayLoading();
 
       if (result.success) {
         emailStatus.textContent = "인증 코드가 발송되었습니다";
@@ -112,6 +114,7 @@ export function renderFindUsername(root) {
         emailStatus.className = "auth-verification-status error";
       }
     } catch (error) {
+      endOverlayLoading();
       console.error("이메일 발송 에러:", error);
 
       let errorMessage = "서버 오류";
@@ -137,8 +140,7 @@ export function renderFindUsername(root) {
     }
 
     verifyCodeBtn.disabled = true;
-    verificationStatus.textContent = "확인 중...";
-    verificationStatus.className = "auth-verification-status";
+    startOverlayLoading({ text: "아이디 찾는 중..." });
 
     try {
       // 먼저 인증 코드 확인
@@ -149,6 +151,7 @@ export function renderFindUsername(root) {
       });
 
       if (!verifyResult.success) {
+        endOverlayLoading();
         verificationStatus.textContent = verifyResult.message || "인증 실패";
         verificationStatus.className = "auth-verification-status error";
         verifyCodeBtn.disabled = false;
@@ -160,6 +163,8 @@ export function renderFindUsername(root) {
         email,
         code
       });
+
+      endOverlayLoading();
 
       if (findResult.success && findResult.data) {
         verificationStatus.textContent = "✓ 인증 완료";
@@ -200,6 +205,7 @@ export function renderFindUsername(root) {
         verifyCodeBtn.disabled = false;
       }
     } catch (error) {
+      endOverlayLoading();
       console.error("아이디 찾기 에러:", error);
 
       let errorMessage = "서버 오류";
