@@ -659,7 +659,7 @@
         <div class="empty">${qs(e||"오류가 발생했습니다")}</div>
       </div>
     </div>
-  `}function qs(t){return String(t??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;")}function _s(t){const e=t.closest(".page");return e&&e.classList.add("page--auth"),()=>{e&&e.classList.remove("page--auth")}}function As(t){if(Ft()){N("/");return}const e=_s(t),a="/img/logo.png",n=document.createElement("div");n.className="auth-wrap",n.innerHTML=`
+  `}function qs(t){return String(t??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;")}function _s(t){const e=t.closest(".page");return e&&e.classList.add("page--auth"),()=>{e&&e.classList.remove("page--auth")}}function As(t){if(Ft()){N("/");return}const e=_s(t),a="/AIBE4_Project2_Team2_FE/img/logo.png",n=document.createElement("div");n.className="auth-wrap",n.innerHTML=`
     <div class="auth-split">
       <div class="auth-hero">
         <div class="auth-hero-content">
