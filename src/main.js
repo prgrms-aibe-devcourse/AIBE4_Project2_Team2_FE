@@ -1,5 +1,6 @@
 // src/main.js
-import "./css/mypage/_modals-base.css";
+import "./css/mypage/modals-base.css";
+import "./css/common.css";
 
 import { startRouter } from "./router.js";
 import { initOverlayEvents } from "./utils/overlay.js";
